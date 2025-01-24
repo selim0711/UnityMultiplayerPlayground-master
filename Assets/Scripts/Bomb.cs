@@ -108,6 +108,7 @@ public class Bomb : NetworkBehaviour
 
     private void Explode()
     {
+        //Debug.Log($"Bomb exploded on Player {currentOwner.OwnerClientId}!");
         GameManager.Instance.PlayerDied(currentOwner);
         DestroyBombServerRpc();
     }
