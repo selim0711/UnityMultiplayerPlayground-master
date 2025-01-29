@@ -3,6 +3,7 @@ using Unity.Netcode.Components;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
+using Cinemachine;
 
 [RequireComponent(typeof(NetworkTransform))]
 [RequireComponent(typeof(NetworkObject))]
@@ -69,6 +70,12 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     private Animator animator;
 
+
+
+    /*
+    [Header("Camera Settings")]
+    public float mouseSensitivity = 100f;  // Neue Sensibilitätseinstellung
+    */
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
@@ -87,6 +94,8 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             {
                 staminaSlider = UIManager.Instance.CreateStaminaSliderForPlayer(NetworkManager.Singleton.LocalClientId);
             }
+
+            
         }
     }
 
@@ -96,11 +105,13 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         {
             ClientInput();
             UpdateStaminaUI();
+            //HandleMouseRotation();
         }
 
         if (IsServer)
         {
             HandleStaminaRegenerationAndDepletion();
+            HandleStaminaRegenerationAndDepletion();    
         }
 
         ClientMoveAndRotate();
@@ -128,72 +139,90 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             animator.SetTrigger($"{networkPlayerState.Value}");
         }
     }
-
+ 
     private void ClientInput()
     {
-        Vector3 inputRotation = new Vector3(0, Input.GetAxis("Horizontal"), 0);
-        Vector3 direction = transform.TransformDirection(Vector3.forward);
+        // Seitliche Bewegungen
+        Vector3 inputSideStep = transform.right * Input.GetAxis("Horizontal") * walkSpeed;
+
+        // Vorwärts/Rückwärts-Bewegung
+        Vector3 direction = transform.forward;
         float forwardInput = Input.GetAxis("Vertical");
-        Vector3 inputPosition = direction * forwardInput;
+        Vector3 inputPosition = direction * forwardInput * walkSpeed;
 
+        // Zustandserkennung für Laufen
         bool wasRunning = networkPlayerState.Value == PlayerState.Run;
+        bool isRunning = ActiveRunningActionKey() && forwardInput > 0 && !isOutOfStamina;
 
-        if (isOutOfStamina && networkPlayerStamina.Value >= 30)
+        // Anwendung des Laufgeschwindigkeitsbonus, wenn der Spieler rennt und nicht außer Atem ist
+        if (isRunning)
         {
-            isOutOfStamina = false;  
+            inputPosition *= runSpeedOffset;
         }
 
-        if (forwardInput == 0)
+        // Kombinieren der seitlichen und vorwärts/rückwärts Bewegungen
+        Vector3 inputMovement = inputSideStep + inputPosition;
+
+        // Aktualisieren des Zustands basierend auf den Eingaben und Ausdauer
+        UpdatePlayerMovementState(forwardInput, Input.GetAxis("Horizontal"), isRunning);
+
+        // Übertragen der Position und optional der Rotation (falls später benötigt)
+        if (inputMovement != Vector3.zero)
         {
-            UpdatePlayerStateServerRpc(PlayerState.Idle);
+            UpdateClientPositionAndRotationServerRpc(inputMovement, Vector3.zero); // Keine Rotation durch A/D
         }
-        else if (!ActiveRunningActionKey() && forwardInput > 0)
+
+        // Ausdauer-Logik wie im alten System
+        if (isRunning)
         {
-            UpdatePlayerStateServerRpc(PlayerState.Walk);
-        }
-        else if (ActiveRunningActionKey() && forwardInput > 0)
-        {
-            if (!isOutOfStamina)
+            if (networkPlayerStamina.Value > 0)
             {
-                inputPosition = direction * runSpeedOffset;
-                UpdatePlayerStateServerRpc(PlayerState.Run);
+                RequestStaminaDepletionServerRpc(Time.deltaTime);
             }
             else
             {
-                
+                isOutOfStamina = true;
                 UpdatePlayerStateServerRpc(PlayerState.Walk);
             }
+        }
+        else if (!isRunning && wasRunning)
+        {
+            RequestStaminaRegenerationServerRpc(Time.deltaTime);
+        }
+
+        // Wiederherstellung der Ausdauer, wenn genügend regeneriert
+        if (isOutOfStamina && networkPlayerStamina.Value >= 30)
+        {
+            isOutOfStamina = false;
+        }
+    }
+
+    private void UpdatePlayerMovementState(float forwardInput, float sideInput, bool isRunning)
+    {
+        if (forwardInput == 0 && sideInput == 0)
+        {
+            UpdatePlayerStateServerRpc(PlayerState.Idle);
+        }
+        else if (isRunning)
+        {
+            UpdatePlayerStateServerRpc(PlayerState.Run);
+        }
+        else if (forwardInput != 0 || sideInput != 0)
+        {
+            UpdatePlayerStateServerRpc(PlayerState.Walk);
         }
         else if (forwardInput < 0)
         {
             UpdatePlayerStateServerRpc(PlayerState.ReverseWalk);
         }
-
-        if (oldInputPosition != inputPosition || oldInputRotation != inputRotation)
-        {
-            oldInputPosition = inputPosition;
-            oldInputRotation = inputRotation;
-            UpdateClientPositionAndRotationServerRpc(inputPosition * walkSpeed, inputRotation * rotationSpeed);
-        }
-
-        if (networkPlayerState.Value == PlayerState.Run)
-        {
-            if (networkPlayerStamina.Value > 0)
-            {
-                RequestStaminaDepletionServerRpc(Time.deltaTime);  
-            }
-            else if (!wasRunning || networkPlayerStamina.Value == 0)
-            {
-                isOutOfStamina = true; 
-                UpdatePlayerStateServerRpc(PlayerState.Walk);
-            }
-        }
-
-        if (networkPlayerState.Value != PlayerState.Run && wasRunning)
-        {
-            RequestStaminaRegenerationServerRpc(Time.deltaTime);
-        }
     }
+
+
+
+
+
+
+
 
     private static bool ActiveRunningActionKey()
     {
@@ -267,3 +296,9 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         }
     }
 }
+
+
+
+
+
+
