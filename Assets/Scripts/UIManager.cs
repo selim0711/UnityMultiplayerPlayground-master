@@ -3,6 +3,9 @@ using TMPro;
 using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.UI;
+using System.Net;
+using Unity.Netcode.Transports.UTP;
+using System.Data.Common;
 
 public class UIManager : Singleton<UIManager>
 {
@@ -29,6 +32,11 @@ public class UIManager : Singleton<UIManager>
     [SerializeField] private Transform uiParent;
 
 
+
+    [SerializeField]
+    private TMP_InputField ipInputField;  // Referenz zum IP-Adresse Eingabefeld
+    [SerializeField]
+    private Button connectButton;  // Verbindungsbutton
 
 
     private bool hasServerStarted;
@@ -64,6 +72,21 @@ void Update()
         }
         
     }
+
+    string GetLocalIPAddress()
+    {
+        string localIP = "";
+        foreach (var ip in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
+        {
+            if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+            {
+                localIP = ip.ToString();
+                break;
+            }
+        }
+        return localIP;
+    }
+
     void Start()
     {
         // START SERVER
@@ -72,7 +95,7 @@ void Update()
             if (NetworkManager.Singleton.StartServer())
             {
                 Logger.Instance.LogInfo("Server started...");
-                SetupHostOrServerCallbacks(); 
+                SetupHostOrServerCallbacks();
             }
             else
             {
@@ -80,17 +103,20 @@ void Update()
             }
         });
 
+        // START HOST
         startHostButton?.onClick.AddListener(() =>
         {
             if (NetworkManager.Singleton.StartHost())
             {
-                Logger.Instance.LogInfo("Host started...");
+                string localIP = GetLocalIPAddress();
+                Logger.Instance.LogInfo($"Host started... Local IP Address: {localIP}");
 
-                // Abrufen der DBConnection-Instanz
+                // Display the IP address on UI or any relevant component
+                // Update any relevant UI component to show the IP address to users
+
                 DBConnection dbConnection = FindObjectOfType<DBConnection>();
                 if (dbConnection != null)
                 {
-                    // Benutzernamen abrufen und erneut setzen
                     string username = dbConnection.GetUsername();
                     ulong localClientId = NetworkManager.Singleton.LocalClientId;
                     GameManager.Instance.SetLoggedInUsernameRpc(localClientId, username);
@@ -110,7 +136,9 @@ void Update()
         startClientButton?.onClick.AddListener(async () =>
         {
             if (RelayManager.Instance.IsRelayEnabled && !string.IsNullOrEmpty(joinCodeInput.text))
+            {
                 await RelayManager.Instance.JoinRelay(joinCodeInput.text);
+            }
 
             if (NetworkManager.Singleton.StartClient())
             {
@@ -120,6 +148,27 @@ void Update()
             else
             {
                 Logger.Instance.LogInfo("Unable to start client...");
+            }
+        });
+
+        // CONNECT BUTTON FOR DIRECT IP CONNECTION
+        connectButton?.onClick.AddListener(() =>
+        {
+            string ipAddress = ipInputField.text;
+            if (!string.IsNullOrEmpty(ipAddress))
+            {
+                NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData(ipAddress, 7777);
+                NetworkManager.Singleton.StartClient();
+                DBConnection dbConnection = FindObjectOfType<DBConnection>();
+                string username = dbConnection.GetUsername();
+                ulong localClientId = NetworkManager.Singleton.LocalClientId;
+                GameManager.Instance.SetLoggedInUsernameRpc(localClientId, username);
+
+                Logger.Instance.LogInfo($"Attempting to connect to server at {ipAddress}...");
+            }
+            else
+            {
+                Logger.Instance.LogInfo("IP address field is empty.");
             }
         });
 
@@ -133,8 +182,6 @@ void Update()
         {
             hasServerStarted = true;
         };
-
-
     }
 
 
