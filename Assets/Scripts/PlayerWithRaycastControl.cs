@@ -70,8 +70,14 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     private Animator animator;
 
+    [SerializeField]
+    private float jumpHeight = 2.0f;
 
-
+    // Zustand für den Spieler, ob er sich in der Luft befindet
+    private bool isJumping = false;
+    private float verticalVelocity = 0f;
+    private int jumpCount = 0;
+    private const int maxJumps = 2;
     /*
     [Header("Camera Settings")]
     public float mouseSensitivity = 100f;  // Neue Sensibilitätseinstellung
@@ -95,7 +101,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
                 staminaSlider = UIManager.Instance.CreateStaminaSliderForPlayer(NetworkManager.Singleton.LocalClientId);
             }
 
-            
+
         }
     }
 
@@ -111,19 +117,33 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         if (IsServer)
         {
             HandleStaminaRegenerationAndDepletion();
-            HandleStaminaRegenerationAndDepletion();    
         }
 
+
+        HandleGravity();
         ClientMoveAndRotate();
         ClientVisuals();
+        HandleJump();
+    }
+    private void HandleGravity()
+    {
+        if (!characterController.isGrounded)
+        {
+            verticalVelocity += Physics.gravity.y * Time.deltaTime;
+        }
+        else if (characterController.isGrounded && verticalVelocity < 0)
+        {
+            verticalVelocity = 0;
+        }
     }
 
     private void ClientMoveAndRotate()
     {
-        if (networkPositionDirection.Value != Vector3.zero)
-        {
-            characterController.SimpleMove(networkPositionDirection.Value);
-        }
+        Vector3 move = networkPositionDirection.Value * Time.deltaTime;
+        move += verticalVelocity * Vector3.up * Time.deltaTime; // Füge vertikale Geschwindigkeit hinzu
+
+        characterController.Move(move);
+
         if (networkRotationDirection.Value != Vector3.zero)
         {
             transform.Rotate(networkRotationDirection.Value, Space.World);
@@ -139,7 +159,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             animator.SetTrigger($"{networkPlayerState.Value}");
         }
     }
- 
+
     private void ClientInput()
     {
         // Seitliche Bewegungen
@@ -160,19 +180,6 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             inputPosition *= runSpeedOffset;
         }
 
-        // Kombinieren der seitlichen und vorwärts/rückwärts Bewegungen
-        Vector3 inputMovement = inputSideStep + inputPosition;
-
-        // Aktualisieren des Zustands basierend auf den Eingaben und Ausdauer
-        UpdatePlayerMovementState(forwardInput, Input.GetAxis("Horizontal"), isRunning);
-
-        // Übertragen der Position und optional der Rotation (falls später benötigt)
-        if (inputMovement != Vector3.zero)
-        {
-            UpdateClientPositionAndRotationServerRpc(inputMovement, Vector3.zero); // Keine Rotation durch A/D
-        }
-
-        // Ausdauer-Logik wie im alten System
         if (isRunning)
         {
             if (networkPlayerStamina.Value > 0)
@@ -190,10 +197,50 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             RequestStaminaRegenerationServerRpc(Time.deltaTime);
         }
 
-        // Wiederherstellung der Ausdauer, wenn genügend regeneriert
         if (isOutOfStamina && networkPlayerStamina.Value >= 30)
         {
             isOutOfStamina = false;
+        }
+
+        // Kombinieren der seitlichen und vorwärts/rückwärts Bewegungen
+        Vector3 inputMovement = inputSideStep + inputPosition;
+
+        // Aktualisieren des Zustands basierend auf den Eingaben und Ausdauer
+        UpdatePlayerMovementState(forwardInput, Input.GetAxis("Horizontal"), isRunning);
+
+        if (inputMovement != Vector3.zero || isJumping)
+        {
+            // Hier fügst du die aktuelle vertikale Geschwindigkeit hinzu, die auch über das Netzwerk synchronisiert werden muss.
+            UpdateClientPositionAndRotationServerRpc(inputMovement, Vector3.zero, verticalVelocity);
+        }
+
+
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            if (characterController.isGrounded || jumpCount < maxJumps)
+            {
+                verticalVelocity = CalculateJumpVerticalSpeed();
+                isJumping = true;
+                jumpCount++;  // Zähle jeden Sprung
+                UpdateClientPositionAndRotationServerRpc(networkPositionDirection.Value, Vector3.zero, verticalVelocity);
+            }
+        }
+
+    }
+    private float CalculateJumpVerticalSpeed()
+    {
+        return Mathf.Sqrt(2 * jumpHeight * Physics.gravity.magnitude);
+    }
+
+    private void HandleJump()
+    {
+        if (characterController.isGrounded)
+        {
+            if (isJumping)
+            {
+                isJumping = false;
+            }
+            jumpCount = 0;  // Sprungzähler zurücksetzen, wenn der Spieler den Boden berührt
         }
     }
 
@@ -230,10 +277,11 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     }
 
     [Rpc(SendTo.Server)]
-    public void UpdateClientPositionAndRotationServerRpc(Vector3 newPosition, Vector3 newRotation)
+    public void UpdateClientPositionAndRotationServerRpc(Vector3 newPosition, Vector3 newRotation, float newVerticalVelocity)
     {
         networkPositionDirection.Value = newPosition;
         networkRotationDirection.Value = newRotation;
+        verticalVelocity = newVerticalVelocity; // Direktes Update der vertikalen Geschwindigkeit auf dem Server
     }
 
     [Rpc(SendTo.Server)]
@@ -280,7 +328,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             if (networkPlayerStamina.Value == 0)
             {
                 isOutOfStamina = true;
-                UpdatePlayerStateServerRpc(PlayerState.Walk);  
+                UpdatePlayerStateServerRpc(PlayerState.Walk);
             }
         }
         else
@@ -290,7 +338,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
                 networkPlayerStamina.Value = Mathf.Min(maxStamina, networkPlayerStamina.Value + staminaRegenerationRate * Time.deltaTime);
                 if (isOutOfStamina && networkPlayerStamina.Value >= 30)
                 {
-                    isOutOfStamina = false;  
+                    isOutOfStamina = false;
                 }
             }
         }
