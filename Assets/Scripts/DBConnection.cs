@@ -8,7 +8,7 @@ public class DBConnection : MonoBehaviour
 {
     public static string usernameAH = "";
 
-    //DIE IPs MUSS MAN ÄNDERN!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    
     public static string testingURL = "http://192.168.8.157/api/user.php";
     public static string userRegisterURL = "http://192.168.8.157/api/UserLogin.php";
     
@@ -57,7 +57,7 @@ public class DBConnection : MonoBehaviour
                     LoginResponse response = JsonUtility.FromJson<LoginResponse>(request.downloadHandler.text);
                     if (response.Status)
                     {
-                    Debug.Log($"[DBConnection] Login successful. Username: {username}");
+                    ////////////////////////////////////////////////////////////    Debug.Log($"[DBConnection] Login successful. Username: {username}");
 
                         // Speichere den Benutzernamen
                         currentUsername = username;
