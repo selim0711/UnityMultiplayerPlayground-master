@@ -6,6 +6,7 @@ using UnityEngine.UI;
 using System.Net;
 using Unity.Netcode.Transports.UTP;
 using System.Data.Common;
+using System.Collections;
 
 public class UIManager : Singleton<UIManager>
 {
@@ -41,7 +42,17 @@ public class UIManager : Singleton<UIManager>
 
     private bool hasServerStarted;
 
-
+    [SerializeField]
+    private GameObject[] uiElementsToDeactivateOnHost;
+    [SerializeField]
+    private GameObject[] uiElementsToDeactivateOnJoin;
+    private void DeactivateUIElements(GameObject[] elements)
+    {
+        foreach (GameObject element in elements)
+        {
+            element.SetActive(false);
+        }
+    }
     public Slider CreateStaminaSliderForPlayer(ulong clientId)
     {
         Slider newSlider = Instantiate(staminaSliderPrefab, uiParent);
@@ -110,6 +121,7 @@ void Update()
             {
                 string localIP = GetLocalIPAddress();
                 Logger.Instance.LogInfo($"Host started... Local IP Address: {localIP}");
+                DeactivateUIElements(uiElementsToDeactivateOnHost);
 
                 // Display the IP address on UI or any relevant component
                 // Update any relevant UI component to show the IP address to users
@@ -144,6 +156,7 @@ void Update()
             {
                 Logger.Instance.LogInfo("Client started...");
                 SetupClientCallbacks(); // Setup callbacks for client-related events
+                DeactivateUIElements(uiElementsToDeactivateOnJoin);
             }
             else
             {
@@ -152,23 +165,33 @@ void Update()
         });
 
         // CONNECT BUTTON FOR DIRECT IP CONNECTION
-        connectButton?.onClick.AddListener(() =>
+        connectButton.onClick.AddListener(() =>
         {
-            string ipAddress = ipInputField.text;
-            if (!string.IsNullOrEmpty(ipAddress))
+            Debug.Log($"IP Input Field text: '{ipInputField.text}'"); // Check the actual content
+            if (!string.IsNullOrEmpty(ipInputField.text))
             {
-                NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData(ipAddress, 7777);
-                NetworkManager.Singleton.StartClient();
-                DBConnection dbConnection = FindObjectOfType<DBConnection>();
-                string username = dbConnection.GetUsername();
-                ulong localClientId = NetworkManager.Singleton.LocalClientId;
-                GameManager.Instance.SetLoggedInUsernameRpc(localClientId, username);
-
-                Logger.Instance.LogInfo($"Attempting to connect to server at {ipAddress}...");
+                NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData(ipInputField.text, 7777);
+                if (NetworkManager.Singleton.StartClient())
+                {
+                    DBConnection dbConnection = FindObjectOfType<DBConnection>();
+                    string username = dbConnection.GetUsername();
+                    ulong localClientId = NetworkManager.Singleton.LocalClientId;
+                    GameManager.Instance.SetLoggedInUsernameRpc(localClientId, username);
+                   
+                    Logger.Instance.LogInfo($"Attempting to connect to server at {ipInputField.text}...");
+                    ResetNetworkManager();
+                    DeactivateUIElements(uiElementsToDeactivateOnJoin);
+                }
+                else
+                {
+                    Logger.Instance.LogInfo("Unable to start client...");
+                    ResetNetworkManager();
+                }
             }
             else
             {
                 Logger.Instance.LogInfo("IP address field is empty.");
+               
             }
         });
 
@@ -221,5 +244,24 @@ void Update()
             GameManager.Instance.SetLoggedInUsernameRpc(hostClientId, hostUsername);
             Logger.Instance.LogInfo($"[Host] Assigned username '{hostUsername}' to ClientId {hostClientId}");
         }
+    }
+
+
+
+    private void ResetNetworkManager()
+    {
+        if (NetworkManager.Singleton.IsClient)
+        {
+            NetworkManager.Singleton.Shutdown();
+        }
+
+        // Give some time or a frame delay to ensure complete shutdown
+        StartCoroutine(RestartNetworkManager());
+    }
+
+    private IEnumerator RestartNetworkManager()
+    {
+        yield return new WaitForSeconds(0.1f);  // Adjust time as needed
+        NetworkManager.Singleton.NetworkConfig.NetworkTransport = gameObject.AddComponent<UnityTransport>();
     }
 }

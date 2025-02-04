@@ -1645,6 +1645,7 @@ MonoBehaviour:
   - {fileID: 189727563}
   - {fileID: 1245931920}
   - {fileID: 273690796}
+  - {fileID: 1975191392}
 --- !u!1 &705507993
 GameObject:
   m_ObjectHideFlags: 0
@@ -2347,6 +2348,16 @@ MonoBehaviour:
   uiParent: {fileID: 0}
   ipInputField: {fileID: 1748827032}
   connectButton: {fileID: 30771040}
+  uiElementsToDeactivateOnHost:
+  - {fileID: 1788238526}
+  - {fileID: 407616386}
+  - {fileID: 2024932932}
+  - {fileID: 1975191392}
+  uiElementsToDeactivateOnJoin:
+  - {fileID: 1788238526}
+  - {fileID: 407616386}
+  - {fileID: 2024932932}
+  - {fileID: 1975191392}
 --- !u!1 &1174301440
 GameObject:
   m_ObjectHideFlags: 0
@@ -3601,7 +3612,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1975191393
 RectTransform:
   m_ObjectHideFlags: 0

@@ -24,11 +24,18 @@ public class ActivationManager : MonoBehaviour
         }
     }
 
-    void ActivateGameObjects()
+    public void ActivateGameObjects()
     {
         foreach (GameObject obj in gameObjectsToActivate)
         {
             obj.SetActive(true); 
+        }
+    }
+    public void DeactivateGameObjects()
+    {
+        foreach (GameObject obj in gameObjectsToActivate)
+        {
+            obj.SetActive(false);
         }
     }
 }
