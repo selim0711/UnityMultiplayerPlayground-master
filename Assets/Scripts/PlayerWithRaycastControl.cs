@@ -35,7 +35,8 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     private float rotationSpeed = 3.5f;
 
     [SerializeField]
-    private Vector2 defaultInitialPositionOnPlane = new Vector2(-4, 4);
+    private Vector2 defaultInitialPositionOnPlane = new Vector2(-7, -7);
+
 
     [SerializeField]
     private NetworkVariable<Vector3> networkPositionDirection = new NetworkVariable<Vector3>();
@@ -92,8 +93,9 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     {
         if (IsClient && IsOwner)
         {
-            transform.position = new Vector3(Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y), 0,
-                   Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y));
+     //       transform.position = new Vector3(Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y), 0,
+             //      Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y));
+
 
             staminaSlider = GameObject.FindGameObjectWithTag("StaminaSlider").GetComponent<Slider>();
             if (IsClient && IsOwner)

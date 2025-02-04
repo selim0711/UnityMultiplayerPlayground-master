@@ -5,6 +5,7 @@ using TMPro;
 
 public class Bomb : NetworkBehaviour
 {
+    /*
     public TMP_Text bombTimerText;
 
     [SerializeField]
@@ -117,5 +118,5 @@ public class Bomb : NetworkBehaviour
     {
         NetworkObject.Despawn();
         Destroy(gameObject);
-    }
+    } */
 }

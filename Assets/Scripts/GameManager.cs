@@ -67,7 +67,10 @@ public class GameManager : NetworkBehaviour
     private NetworkVariable<int> alivePlayersCount = new NetworkVariable<int>(0);
 
     [SerializeField]
-    private GameObject bombPrefab; 
+    private GameObject spawnArea;
+
+    [SerializeField]
+    private GameObject ballPrefab; 
 
     [SerializeField]
     private GameObject playerPrefab = null;
@@ -81,8 +84,9 @@ public class GameManager : NetworkBehaviour
     [SerializeField]
     private TMP_Text countdownText;
 
+
     
-     private TMP_Text bombTimerText;
+     private TMP_Text gameTimerText;
 
     private bool gameRunning = false;
 
@@ -116,13 +120,52 @@ public class GameManager : NetworkBehaviour
         StartGameServerRpc();
     }
 
-   
+    private Vector3 GetValidSpawnPosition()
+    {
+        if (!spawnArea)
+        {
+            Debug.LogError("Spawn area GameObject is not set.");
+            return Vector3.zero;
+        }
+
+        Collider spawnAreaCollider = spawnArea.GetComponent<Collider>();
+        if (!spawnAreaCollider)
+        {
+            Debug.LogError("Spawn area GameObject does not have a Collider component.");
+            return Vector3.zero;
+        }
+
+        Bounds bounds = spawnAreaCollider.bounds;
+        Debug.Log($"Bounds: {bounds}"); // Log the actual bounds to verify their values
+
+        int maxAttempts = 100;
+        for (int i = 0; i < maxAttempts; i++)
+        {
+            Vector3 randomPosition = new Vector3(
+                Random.Range(bounds.min.x, bounds.max.x),
+                bounds.center.y, // Ensure this is correctly set based on the surface of the plane
+                Random.Range(bounds.min.z, bounds.max.z)
+            );
+
+            if (!Physics.CheckSphere(randomPosition, 1f, LayerMask.GetMask("Player", "Obstacle"), QueryTriggerInteraction.Ignore))
+            {
+                Debug.Log("Valid position found: " + randomPosition);
+                return randomPosition;
+            }
+        }
+
+        Debug.LogError("Failed to find a valid position after " + maxAttempts + " attempts.");
+        return Vector3.zero;
+    }
 
 
-[Rpc(SendTo.Server)]
+    [Rpc(SendTo.Server)]
     public void SetLoggedInUsernameRpc(ulong clientId, string username)
     {
-        var spawnedPlayer = Instantiate(playerPrefab, Vector3.zero, Quaternion.identity);
+        Vector3 spawnPosition = GetValidSpawnPosition();
+        Quaternion spawnRotation = Quaternion.Euler(0, Random.Range(0, 360), 0); // Zufällige Y-Rotation
+
+        var spawnedPlayer = Instantiate(playerPrefab, spawnPosition, spawnRotation);
 
         var playerComp = spawnedPlayer.GetComponent<NetworkPlayer>();
         var netObj = playerComp.NetworkObject;
@@ -154,6 +197,10 @@ public class GameManager : NetworkBehaviour
         
         BroadcastUsernameToClientsServerRpc(clientId, netObj.NetworkObjectId, username);
     }
+
+
+ 
+
     public string GetUsernameForClient(ulong clientId)
     {
         if (clientUsernames.TryGetValue(clientId, out string username))
@@ -258,10 +305,10 @@ public class GameManager : NetworkBehaviour
             countdownText.text = "";
         }
 
-        AssignBombToRandomPlayer();
+        SpawnBall();
     }
 
-    private void AssignBombToRandomPlayer()
+    private void SpawnBall()
     {
         playersInGame.Clear();
         foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
@@ -283,74 +330,8 @@ public class GameManager : NetworkBehaviour
         PlayerBombHandler selectedPlayer = playersInGame[randomIndex];
         //Debug.Log($"Assigning bomb to Player {selectedPlayer.OwnerClientId}.");
 
-        var bombInstance = Instantiate(bombPrefab, selectedPlayer.transform.position, Quaternion.identity);
-        bombInstance.GetComponent<NetworkObject>().Spawn(true);
-        bombInstance.GetComponent<Bomb>().AssignOwner(selectedPlayer);
-    }
-
-    public void PlayerDied(PlayerBombHandler player)
-    {
-        playersInGame.Remove(player);
-        player.OnPlayerDied();
-
-
-        if (playersInGame.Count == 1)
-        {
-            gameRunning = false;
-            var winner = playersInGame[0];
-            string winnerName = GetUsernameForClient(winner.OwnerClientId); // Name vom Gewinner bekommen
-            Debug.Log($"Game Over! Player {winnerName} wins!");
-
-            // Alle spieler informieren wer der Gewinner ist
-            foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
-            {
-                var playerHandler = client.PlayerObject?.GetComponent<PlayerBombHandler>();
-                if (playerHandler != null)
-                {
-                    playerHandler.ShowWinnerAnnouncementClientRpc(winnerName, new ClientRpcParams
-                    {
-                        Send = new ClientRpcSendParams
-                        {
-                            TargetClientIds = new ulong[] { client.ClientId }
-                        }
-                    });
-                }
-            }
-
-            // Zeigt ob man Gewonnen/Verloren hat
-            winner.ShowWinUIClientRpc(new ClientRpcParams
-            {
-                Send = new ClientRpcSendParams
-                {
-                    TargetClientIds = new ulong[] { winner.OwnerClientId }
-                }
-            });
-
-            foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
-            {
-                var playerHandler = client.PlayerObject?.GetComponent<PlayerBombHandler>();
-                if (playerHandler != null && playerHandler.OwnerClientId != winner.OwnerClientId)
-                {
-                    playerHandler.ShowLoseUIClientRpc(new ClientRpcParams
-                    {
-                        Send = new ClientRpcSendParams
-                        {
-                            TargetClientIds = new ulong[] { playerHandler.OwnerClientId }
-                        }
-                    });
-                }
-            }
-        }
-        else
-        {
-            AssignBombToRandomPlayer();
-        }
-    }
-
-
-
-    public bool IsPlayerAlive(PlayerBombHandler player)
-    {
-        return playersInGame.Contains(player);
+        var ballInstance = Instantiate(ballPrefab, Vector3.zero, Quaternion.identity); // Spawne den Ball im Zentrum
+        ballInstance.GetComponent<NetworkObject>().Spawn();
+        ballInstance.GetComponent<Ball>();
     }
 }

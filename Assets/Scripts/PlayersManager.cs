@@ -21,18 +21,18 @@ public class PlayersManager : NetworkSingleton<PlayersManager>
 {
     if (!NetworkManager.Singleton.IsServer)
     {
-        Debug.LogError("PlayersManager is running on a non-server instance.");
+      //  Debug.LogError("PlayersManager is running on a non-server instance.");
         return;
     }
 
     NetworkManager.Singleton.OnClientConnectedCallback += (id) => {
         playersInGame.Value++;
-        Debug.Log($"Player connected: {id}. Total players: {playersInGame.Value}");
+     //   Debug.Log($"Player connected: {id}. Total players: {playersInGame.Value}");
     };
 
     NetworkManager.Singleton.OnClientDisconnectCallback += (id) => {
         playersInGame.Value--;
-        Debug.Log($"Player disconnected: {id}. Total players: {playersInGame.Value}");
+     //   Debug.Log($"Player disconnected: {id}. Total players: {playersInGame.Value}");
     };
 }
 }

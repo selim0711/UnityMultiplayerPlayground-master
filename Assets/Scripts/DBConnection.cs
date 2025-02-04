@@ -57,7 +57,7 @@ public class DBConnection : MonoBehaviour
                     LoginResponse response = JsonUtility.FromJson<LoginResponse>(request.downloadHandler.text);
                     if (response.Status)
                     {
-                        Debug.Log($"[DBConnection] Login successful. Username: {username}");
+                    ////////////////////////////////////////////////////////////    Debug.Log($"[DBConnection] Login successful. Username: {username}");
 
                         // Speichere den Benutzernamen
                         currentUsername = username;

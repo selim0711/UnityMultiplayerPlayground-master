@@ -20,13 +20,13 @@ public class PageLogin : MonoBehaviour
         login.onClick.AddListener(() =>
         {
             var aya = StartCoroutine(connection.Login(username.text, password.text));
-            Debug.Log("Attempted login");
+         //   Debug.Log("Attempted login");
         });
 
         registerButton.onClick.AddListener(() =>
         {
             StartCoroutine(connection.Register(username.text, password.text));
-            Debug.Log("Attempted registration");
+         //   Debug.Log("Attempted registration");
         });
 
         connection.OnLoggedIn += StartGame;
@@ -34,7 +34,7 @@ public class PageLogin : MonoBehaviour
 
     private void StartGame()
     {
-        Debug.Log("StartGame");
+     //   Debug.Log("StartGame");
         
         gameObject.SetActive(false);
     }
