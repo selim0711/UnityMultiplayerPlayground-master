@@ -7,6 +7,7 @@ using TMPro;
 using System.Runtime.Serialization;
 using System.Linq;
 using Unity.VisualScripting;
+using System;
 
 public struct PlayerData
 {
@@ -67,6 +68,9 @@ public class GameManager : NetworkBehaviour
     private NetworkVariable<int> alivePlayersCount = new NetworkVariable<int>(0);
 
     [SerializeField]
+    private NetworkVariable<float> remainingGameTime = new NetworkVariable<float>();
+
+    [SerializeField]
     private GameObject spawnArea;
 
     [SerializeField]
@@ -85,9 +89,10 @@ public class GameManager : NetworkBehaviour
     private TMP_Text countdownText;
 
 
-    
+    [SerializeField]
      private TMP_Text gameTimerText;
 
+    [SerializeField]
     private bool gameRunning = false;
 
     private void Awake()
@@ -142,9 +147,9 @@ public class GameManager : NetworkBehaviour
         for (int i = 0; i < maxAttempts; i++)
         {
             Vector3 randomPosition = new Vector3(
-                Random.Range(bounds.min.x, bounds.max.x),
+                UnityEngine.Random.Range(bounds.min.x, bounds.max.x),
                 bounds.center.y, // Ensure this is correctly set based on the surface of the plane
-                Random.Range(bounds.min.z, bounds.max.z)
+                UnityEngine.Random.Range(bounds.min.z, bounds.max.z)
             );
 
             if (!Physics.CheckSphere(randomPosition, 1f, LayerMask.GetMask("Player", "Obstacle"), QueryTriggerInteraction.Ignore))
@@ -163,7 +168,7 @@ public class GameManager : NetworkBehaviour
     public void SetLoggedInUsernameRpc(ulong clientId, string username)
     {
         Vector3 spawnPosition = GetValidSpawnPosition();
-        Quaternion spawnRotation = Quaternion.Euler(0, Random.Range(0, 360), 0); // Zufällige Y-Rotation
+        Quaternion spawnRotation = Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0); // Zufällige Y-Rotation
 
         var spawnedPlayer = Instantiate(playerPrefab, spawnPosition, spawnRotation);
 
@@ -287,8 +292,29 @@ public class GameManager : NetworkBehaviour
     private void StartGameServerRpc()
     {
         StartCoroutine(StartCountdown());
+        
     }
-
+    private IEnumerator GameTimer()
+    {
+        remainingGameTime.Value = 600; // Startwert auf 10 Minuten setzen (600 Sekunden)
+        while (remainingGameTime.Value > 0)
+        {
+            yield return new WaitForSeconds(1f);
+            remainingGameTime.Value--;
+            UpdateGameTimerUI();
+        }
+        gameRunning = false;
+        // Hier können weitere Aktionen eingeleitet werden, z.B. das Spiel beenden
+        Debug.Log("Spielzeit abgelaufen!");
+    }
+    private void UpdateGameTimerUI()
+    {
+        if (gameTimerText != null)
+        {
+            TimeSpan timeSpan = TimeSpan.FromSeconds(remainingGameTime.Value);
+            gameTimerText.text = string.Format("{0:D2}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
+        }
+    }
     private IEnumerator StartCountdown()
     {
         for (int i = (int)countdownDuration; i > 0; i--)
@@ -304,34 +330,24 @@ public class GameManager : NetworkBehaviour
         {
             countdownText.text = "";
         }
-
-        SpawnBall();
+    gameRunning = true;
+        StartCoroutine(GameTimer());
+        SpawnBallAtRandomLocation();
     }
 
-    private void SpawnBall()
+    private void SpawnBallAtRandomLocation()
     {
-        playersInGame.Clear();
-        foreach (var client in NetworkManager.Singleton.ConnectedClientsList)
+        Vector3 ballSpawnPosition = GetValidSpawnPosition(); // Verwenden der gleichen Methode, um eine gültige Position zu erhalten
+        if (ballSpawnPosition != Vector3.zero)
         {
-            var handler = client.PlayerObject?.GetComponent<PlayerBombHandler>();
-            if (handler != null && handler.IsAlive)
-            {
-                playersInGame.Add(handler);
-            }
+            float spawnHeight = 40f; // Höhe, aus der der Ball fallen soll
+            ballSpawnPosition.y += spawnHeight; // Erhöhen der y-Koordinate um den spawnHeight
+            var ballInstance = Instantiate(ballPrefab, ballSpawnPosition, Quaternion.identity); // Verwenden der modifizierten Position
+            ballInstance.GetComponent<NetworkObject>().Spawn();
         }
-
-        if (playersInGame.Count == 0)
+        else
         {
-            Debug.LogError("No alive players available to assign the bomb.");
-            return;
+            Debug.LogError("Failed to spawn the ball due to no valid position found.");
         }
-
-        int randomIndex = Random.Range(0, playersInGame.Count);
-        PlayerBombHandler selectedPlayer = playersInGame[randomIndex];
-        //Debug.Log($"Assigning bomb to Player {selectedPlayer.OwnerClientId}.");
-
-        var ballInstance = Instantiate(ballPrefab, Vector3.zero, Quaternion.identity); // Spawne den Ball im Zentrum
-        ballInstance.GetComponent<NetworkObject>().Spawn();
-        ballInstance.GetComponent<Ball>();
     }
 }
