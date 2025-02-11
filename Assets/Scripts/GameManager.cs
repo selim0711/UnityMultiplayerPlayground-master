@@ -101,7 +101,6 @@ public class GameManager : NetworkBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-            //Debug.Log("[GameManager] Initialized.");
         }
         else
         {
@@ -301,7 +300,7 @@ public class GameManager : NetworkBehaviour
         {
             yield return new WaitForSeconds(1f);
             remainingGameTime.Value--;
-            UpdateGameTimerUI();
+            //UpdateGameTimerUI();
         }
         gameRunning = false;
         // Hier können weitere Aktionen eingeleitet werden, z.B. das Spiel beenden
