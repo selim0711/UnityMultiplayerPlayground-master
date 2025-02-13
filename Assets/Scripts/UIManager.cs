@@ -65,12 +65,12 @@ public class UIManager : Singleton<UIManager>
     {
         Cursor.visible = true;
     }
+    
     /*
-
 void Update()
 {
         playersInGameText.text = $"Players in game: {GameManager.Instance.GetAlivePlayersCount()}";
-    }*/
+    } */
     void Update()
     {
         if (PlayersManager.Instance != null)
@@ -156,7 +156,7 @@ void Update()
             {
                 Logger.Instance.LogInfo("Client started...");
                 SetupClientCallbacks(); // Setup callbacks for client-related events
-                DeactivateUIElements(uiElementsToDeactivateOnJoin);
+               DeactivateUIElements(uiElementsToDeactivateOnJoin);
             }
             else
             {
@@ -170,7 +170,8 @@ void Update()
             Debug.Log($"IP Input Field text: '{ipInputField.text}'"); // Check the actual content
             if (!string.IsNullOrEmpty(ipInputField.text))
             {
-                NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData(ipInputField.text, 7777);
+                NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData("127.0.0.1", 7777);
+                
                 if (NetworkManager.Singleton.StartClient())
                 {
                     DBConnection dbConnection = FindObjectOfType<DBConnection>();

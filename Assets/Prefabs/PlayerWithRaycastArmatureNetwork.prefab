@@ -265,6 +265,37 @@ Transform:
   - {fileID: 6546993670434883999}
   m_Father: {fileID: 6175967032285043618}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1086340689656328736
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 28601323905070412}
+  m_Layer: 6
+  m_Name: Hand
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &28601323905070412
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1086340689656328736}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -0.47, y: 0.92, z: 0.56}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 1442616492088815482}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1105165784449620527
 GameObject:
   m_ObjectHideFlags: 0
@@ -1060,7 +1091,6 @@ GameObject:
   - component: {fileID: 6369897166939302241}
   - component: {fileID: 6253156397449383580}
   - component: {fileID: 2416264119302053026}
-  - component: {fileID: 2877753859617269200}
   - component: {fileID: 584411965140476966}
   m_Layer: 6
   m_Name: PlayerWithRaycastArmatureNetwork
@@ -1088,6 +1118,7 @@ Transform:
   - {fileID: 4627964455330630087}
   - {fileID: 2603506279155370555}
   - {fileID: 5145337494842962636}
+  - {fileID: 28601323905070412}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!95 &4820286304567637248
@@ -1201,13 +1232,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1c8a5ff3f9a4e13418df908f76d74733, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  handTransform: {fileID: 28601323905070412}
   networkPlayerStamina:
     m_InternalValue: 100
   maxStamina: 100
   staminaRegenerationRate: 5
   staminaDepletionRate: 20
   walkSpeed: 3.5
-  runSpeedOffset: 2
+  runSpeedOffset: 15
   rotationSpeed: 8
   defaultInitialPositionOnPlane: {x: -4, y: 4}
   networkPositionDirection:
@@ -1239,25 +1271,6 @@ MonoBehaviour:
   playerInfoText: {fileID: 1739540155130014271}
   playerName: 
   playerID: 0
---- !u!114 &2877753859617269200
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2255991852033553856}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6efb5d0cdfb7b6c43bb49b6f99aa2214, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  playerTag: {fileID: 1617713983580205402}
-  loseUI: {fileID: 3777766605956271911}
-  winUI: {fileID: 1286776463840092067}
-  winnerAnnouncementUI: {fileID: 5246890601597720858}
-  winnerAnnouncementText: {fileID: 1391819060974653680}
-  bombTransferRadius: 2
-  bombCooldown: 1
 --- !u!135 &584411965140476966
 SphereCollider:
   m_ObjectHideFlags: 0
@@ -1277,8 +1290,8 @@ SphereCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Radius: 1
-  m_Center: {x: 0, y: 0.9214263, z: 0}
+  m_Radius: 1.4559224
+  m_Center: {x: 0, y: 0.9214256, z: 0.082963705}
 --- !u!1 &2439462815760529262
 GameObject:
   m_ObjectHideFlags: 0

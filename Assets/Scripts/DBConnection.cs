@@ -137,7 +137,49 @@ public class DBConnection : MonoBehaviour
             }
         }
     }
+
+    public IEnumerator UpdateHighScore(int userId, int highScore)
+    {
+        WWWForm form = new WWWForm();
+        form.AddField("userId", userId);
+        form.AddField("highScore", highScore);
+
+        using (UnityWebRequest www = UnityWebRequest.Post("http://192.168.8.157/api/updateHighScore.php", form))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.isNetworkError || www.isHttpError)
+            {
+                Debug.LogError($"Failed to send high score: {www.error}");
+            }
+            else
+            {
+                Debug.Log("High score updated successfully!");
+            }
+        }
+    }
+
+    public IEnumerator FetchHighScores()
+    {
+        using (UnityWebRequest www = UnityWebRequest.Get("http://192.168.8.157/api/fetchHighScores.php"))
+        {
+            yield return www.SendWebRequest();
+
+            if (www.isNetworkError || www.isHttpError)
+            {
+                Debug.LogError($"Failed to fetch high scores: {www.error}");
+            }
+            else
+            {
+                Debug.Log("High scores fetched successfully!");
+                Debug.Log(www.downloadHandler.text);
+                // Hier können Sie die empfangenen Highscores weiterverarbeiten
+            }
+        }
+    }
 }
+
+
 [Serializable]
 public class LoginResponse
 {

@@ -5,6 +5,7 @@ using TMPro;
 
 public class PlayerBombHandler : NetworkBehaviour
 {
+    /*
     [SerializeField]
     private GameObject playerTag;
 
@@ -171,5 +172,5 @@ public class PlayerBombHandler : NetworkBehaviour
     {
         return player.playerID;
     }
-
+    */
 }

@@ -71,29 +71,34 @@ public class GameManager : NetworkBehaviour
     private NetworkVariable<float> remainingGameTime = new NetworkVariable<float>();
 
     [SerializeField]
+    private NetworkVariable<int> networkCountdown = new NetworkVariable<int>();
+
+    private Dictionary<ulong, int> playerScores = new Dictionary<ulong, int>();
+
+    [SerializeField]
     private GameObject spawnArea;
 
     [SerializeField]
-    private GameObject ballPrefab; 
+    private GameObject ballPrefab;
 
     [SerializeField]
     private GameObject playerPrefab = null;
 
     [SerializeField]
-    private float countdownDuration = 3f; 
+    private float countdownDuration = 3f;
 
     [SerializeField]
-    private Button startGameButton; 
+    private Button startGameButton;
 
     [SerializeField]
     private TMP_Text countdownText;
 
 
     [SerializeField]
-     private TMP_Text gameTimerText;
+    private TMP_Text gameTimerText;
 
     [SerializeField]
-    private bool gameRunning = false;
+    public bool gameRunning = false;
 
     private void Awake()
     {
@@ -110,12 +115,29 @@ public class GameManager : NetworkBehaviour
 
     private void Start()
     {
+        remainingGameTime.OnValueChanged += OnGameTimeChanged;
+        networkCountdown.OnValueChanged += UpdateCountdownDisplay;
+
         if (startGameButton != null)
         {
-           
+
             startGameButton.onClick.AddListener(OnStartGamePressed);
         }
     }
+
+    private void UpdateCountdownDisplay(int oldValue, int newValue)
+    {
+        if (countdownText != null)
+        {
+            countdownText.text = newValue > 0 ? $"Start in: {newValue}" : "";
+        }
+    }
+
+    private void OnGameTimeChanged(float oldTime, float newTime)
+    {
+        UpdateGameTimerUI(newTime);
+    }
+
     private void OnStartGamePressed()
     {
         if (!IsServer) return;
@@ -174,16 +196,16 @@ public class GameManager : NetworkBehaviour
         var playerComp = spawnedPlayer.GetComponent<NetworkPlayer>();
         var netObj = playerComp.NetworkObject;
 
-        
+
         netObj.SpawnAsPlayerObject(clientId);
 
-        
+
         if (NetworkManager.ConnectedClients.TryGetValue(clientId, out NetworkClient client))
         {
             client.PlayerObject = netObj;
         }
 
-        
+
         if (!clientUsernames.ContainsKey(clientId))
         {
             Debug.Log($"[GameManager] Adding username for ClientId {clientId}: {username}");
@@ -195,15 +217,15 @@ public class GameManager : NetworkBehaviour
             clientUsernames[clientId] = username;
         }
 
-        
+
         Debug.Log($"Spawned player object with OwnerClientId: {netObj.OwnerClientId}");
 
-        
+
         BroadcastUsernameToClientsServerRpc(clientId, netObj.NetworkObjectId, username);
     }
 
 
- 
+
 
     public string GetUsernameForClient(ulong clientId)
     {
@@ -254,12 +276,12 @@ public class GameManager : NetworkBehaviour
     }
     public PlayerData GetPlayerData(ulong clientId)
     {
-        
+
         if (clientUsernames.TryGetValue(clientId, out string username))
         {
             return new PlayerData { playerID = clientId, playerName = username };
         }
-        return default; 
+        return default;
     }
 
     [ServerRpc]
@@ -283,7 +305,7 @@ public class GameManager : NetworkBehaviour
         }
         else
         {
-           // Debug.Log("Couldnt Find Player!, not yet Spawned");
+            // Debug.Log("Couldnt Find Player!, not yet Spawned");
         }
     }
 
@@ -291,45 +313,39 @@ public class GameManager : NetworkBehaviour
     private void StartGameServerRpc()
     {
         StartCoroutine(StartCountdown());
-        
+
     }
     private IEnumerator GameTimer()
     {
-        remainingGameTime.Value = 600; // Startwert auf 10 Minuten setzen (600 Sekunden)
+        remainingGameTime.Value = 600; // Set to 10 minutes
         while (remainingGameTime.Value > 0)
         {
-            yield return new WaitForSeconds(1f);
+            yield return new WaitForSeconds(1);
             remainingGameTime.Value--;
-            //UpdateGameTimerUI();
         }
         gameRunning = false;
-        // Hier können weitere Aktionen eingeleitet werden, z.B. das Spiel beenden
-        Debug.Log("Spielzeit abgelaufen!");
+        Debug.Log("Game time expired!");
     }
-    private void UpdateGameTimerUI()
+
+
+    private void UpdateGameTimerUI(float time)
     {
         if (gameTimerText != null)
         {
-            TimeSpan timeSpan = TimeSpan.FromSeconds(remainingGameTime.Value);
+            TimeSpan timeSpan = TimeSpan.FromSeconds(time);
             gameTimerText.text = string.Format("{0:D2}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
         }
     }
     private IEnumerator StartCountdown()
     {
-        for (int i = (int)countdownDuration; i > 0; i--)
+        int countdownTime = 3;  // Set this to your countdown duration
+        while (countdownTime >= 0)
         {
-            if (countdownText != null)
-            {
-                countdownText.text = $"Start in: {i}";
-            }
+            networkCountdown.Value = countdownTime--;
             yield return new WaitForSeconds(1);
         }
-
-        if (countdownText != null)
-        {
-            countdownText.text = "";
-        }
-    gameRunning = true;
+        // Trigger any other actions post-countdown
+        gameRunning = true;
         StartCoroutine(GameTimer());
         SpawnBallAtRandomLocation();
     }

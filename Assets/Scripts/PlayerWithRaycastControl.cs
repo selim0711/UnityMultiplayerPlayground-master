@@ -4,11 +4,39 @@ using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using Cinemachine;
+using System.Collections;
 
 [RequireComponent(typeof(NetworkTransform))]
 [RequireComponent(typeof(NetworkObject))]
 public class PlayerWithRaycastControl : NetworkBehaviour
 {
+
+
+
+    [SerializeField]
+    private Transform handTransform; // Transform, where the ball should be positioned when held
+
+    private GameObject heldBall = null;
+    [SerializeField]
+    private float score = 0.0f; // Player's score
+
+    [SerializeField]
+    private bool isStunned = false; // Stun-Zustand des Spielers
+    private float stunDuration = 5f;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     [SerializeField]
     private NetworkVariable<float> networkPlayerStamina = new NetworkVariable<float>(100f);
 
@@ -107,12 +135,71 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         }
     }
 
+
+
+
+
+
+
+
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("Player"))
+        {
+            if (heldBall != null && !isStunned)
+            {
+                DropBallServerRpc();
+                StartCoroutine(StunPlayer(stunDuration));
+            }
+        }
+        else if (other.gameObject.CompareTag("Ball") && heldBall == null && !isStunned)
+        {
+            Ball ballScript = other.GetComponent<Ball>();
+            if (ballScript && ballScript.CanInteract(NetworkManager.Singleton.LocalClientId))
+            {
+                ballScript.InteractWithBallRpc(NetworkManager.Singleton.LocalClientId);
+                heldBall = other.gameObject; // Halte den Ball
+                heldBall.GetComponent<Ball>().SetOwner(transform, handTransform);
+            }
+        }
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        if (other.gameObject == heldBall)
+        {
+            DropBallServerRpc();
+        }
+    }
+
+
+    private IEnumerator StunPlayer(float duration)
+    {
+        isStunned = true;
+        yield return new WaitForSeconds(duration);
+        isStunned = false;
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     private void Update()
     {
         if (IsOwner)
         {
             ClientInput();
             UpdateStaminaUI();
+            
             //HandleMouseRotation();
         }
 
@@ -126,7 +213,46 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         ClientMoveAndRotate();
         ClientVisuals();
         HandleJump();
+
+        if (heldBall != null && !isStunned)////////////////////////////////////////////
+        {
+            score += Time.deltaTime; // Punkte für das Halten des Balls
+        }
     }
+
+
+
+    [ServerRpc(RequireOwnership = false)]
+    public void DropBallServerRpc()
+    {
+        if (heldBall != null)/////////////////////////////////////////////////////////
+        {
+            Ball ballScript = heldBall.GetComponent<Ball>();
+            if (ballScript)
+            {
+                ballScript.ClearOwnerRpc();
+            }
+            heldBall = null;
+        }
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     private void HandleGravity()
     {
         if (!characterController.isGrounded)
