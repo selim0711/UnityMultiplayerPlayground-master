@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Text;
 using Unity.Netcode;
@@ -57,14 +57,20 @@ public class DBConnection : MonoBehaviour
                     LoginResponse response = JsonUtility.FromJson<LoginResponse>(request.downloadHandler.text);
                     if (response.Status)
                     {
-                    ////////////////////////////////////////////////////////////    Debug.Log($"[DBConnection] Login successful. Username: {username}");
+                        Debug.Log($"✅ Login successful! Username: {response.UserName}, ID: {response.id}");
+
+                        PlayerPrefs.SetInt("userID", response.id);
+                        PlayerPrefs.Save();
+                        int savedId = PlayerPrefs.GetInt("userID", 0);
+                        Debug.Log($"🔍 Gespeicherte User ID: {savedId}");
+
 
                         // Speichere den Benutzernamen
                         currentUsername = username;
                         usernameAH = username;
 
                         ulong localClientId = NetworkManager.Singleton.LocalClientId;
-                        GameManager.Instance.SetLoggedInUsernameRpc(localClientId, username);
+                        GameManager.Instance.SetLoggedInUsernameRpc(localClientId, response.UserName);
 
                         OnLoggedIn?.Invoke();
                     }
@@ -173,7 +179,7 @@ public class DBConnection : MonoBehaviour
             {
                 Debug.Log("High scores fetched successfully!");
                 Debug.Log(www.downloadHandler.text);
-                // Hier k�nnen Sie die empfangenen Highscores weiterverarbeiten
+                // Hier können Sie die empfangenen Highscores weiterverarbeiten
             }
         }
     }
@@ -186,6 +192,7 @@ public class LoginResponse
     public string Message;
     public bool Status;
     public string UserName;
+    public int id;
 }
 
 

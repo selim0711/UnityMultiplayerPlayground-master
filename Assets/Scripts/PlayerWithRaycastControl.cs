@@ -1,24 +1,29 @@
-using Unity.Netcode;
+ï»¿using Unity.Netcode;
 using Unity.Netcode.Components;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
 using Cinemachine;
 using System.Collections;
+using UnityEngine.Networking;
+using System.Text;
 
 [RequireComponent(typeof(NetworkTransform))]
 [RequireComponent(typeof(NetworkObject))]
 public class PlayerWithRaycastControl : NetworkBehaviour
 {
 
+   
 
 
     [SerializeField]
     private Transform handTransform; // Transform, where the ball should be positioned when held
 
     private GameObject heldBall = null;
+
+    private float decimalScore;
     [SerializeField]
-    private float score = 0.0f; // Player's score
+    private int score = 0; // Player's score
 
     [SerializeField]
     private bool isStunned = false; // Stun-Zustand des Spielers
@@ -102,14 +107,14 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     [SerializeField]
     private float jumpHeight = 2.0f;
 
-    // Zustand für den Spieler, ob er sich in der Luft befindet
+    // Zustand fÃ¼r den Spieler, ob er sich in der Luft befindet
     private bool isJumping = false;
     private float verticalVelocity = 0f;
     private int jumpCount = 0;
     private const int maxJumps = 2;
     /*
     [Header("Camera Settings")]
-    public float mouseSensitivity = 100f;  // Neue Sensibilitätseinstellung
+    public float mouseSensitivity = 100f;  // Neue SensibilitÃ¤tseinstellung
     */
     private void Awake()
     {
@@ -119,6 +124,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     void Start()
     {
+        StartCoroutine(UpdateScoreEverySecond());
         if (IsClient && IsOwner)
         {
      //       transform.position = new Vector3(Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y), 0,
@@ -130,14 +136,74 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             {
                 staminaSlider = UIManager.Instance.CreateStaminaSliderForPlayer(NetworkManager.Singleton.LocalClientId);
             }
-
+           
 
         }
     }
 
+    private IEnumerator UpdateScoreEverySecond()
+    {
+        while (true)
+        {
+            yield return new WaitForSeconds(1f); // Warte 1 Sekunde
+            UpdatePlayerScoreToServer();
+        }
+    }
+
+    private void UpdatePlayerScoreToServer()
+    {
+        int userId = PlayerPrefs.GetInt("userID", 0); // ðŸŸ¢ Benutzer-ID aus Speicher abrufen
+        if (userId == 0)
+        {
+            Debug.LogError("âŒ Keine Benutzer-ID gefunden! Ist der Spieler eingeloggt?");
+            return;
+        }
+
+        StartCoroutine(SendScoreToDatabase(userId, score));
+    }
 
 
+    [System.Serializable]
+    public class ScoreData
+    {
+        public int id;
+        public int score;
+    }
 
+
+    public IEnumerator SendScoreToDatabase(int userId, int score)
+    {
+        // ðŸŸ¢ Debugging der gesendeten Daten
+        Debug.Log($"ðŸ“¤ Sende Score: {score} fÃ¼r User ID: {userId}");
+
+        ScoreData scoreData = new ScoreData
+        {
+            id = userId,  // ðŸŸ¢ Korrekte Benutzer-ID senden!
+            score = score
+        };
+
+        string json = JsonUtility.ToJson(scoreData);
+        Debug.Log($"ðŸ“„ JSON gesendet: {json}");
+
+        byte[] jsonToSend = Encoding.UTF8.GetBytes(json);
+
+        using (UnityWebRequest www = new UnityWebRequest("http://192.168.8.157/api/updateScore.php", "POST"))
+        {
+            www.uploadHandler = new UploadHandlerRaw(jsonToSend);
+            www.downloadHandler = new DownloadHandlerBuffer();
+            www.SetRequestHeader("Content-Type", "application/json");
+            yield return www.SendWebRequest();
+
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.LogError("âŒ Fehler beim Senden des Scores: " + www.error);
+            }
+            else
+            {
+                Debug.Log("âœ… Score erfolgreich aktualisiert: " + www.downloadHandler.text);
+            }
+        }
+    }
 
 
 
@@ -191,8 +257,6 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
 
 
-
-
     private void Update()
     {
         if (IsOwner)
@@ -214,10 +278,11 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         ClientVisuals();
         HandleJump();
 
-        if (heldBall != null && !isStunned)////////////////////////////////////////////
+       if (heldBall != null && !isStunned)////////////////////////////////////////////
         {
-            score += Time.deltaTime; // Punkte für das Halten des Balls
-        }
+            decimalScore += 1 * Time.deltaTime;
+            score = Mathf.RoundToInt(decimalScore); // Punkte fÃ¼r das Halten des Balls
+        } 
     }
 
 
@@ -268,7 +333,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     private void ClientMoveAndRotate()
     {
         Vector3 move = networkPositionDirection.Value * Time.deltaTime;
-        move += verticalVelocity * Vector3.up * Time.deltaTime; // Füge vertikale Geschwindigkeit hinzu
+        move += verticalVelocity * Vector3.up * Time.deltaTime; // FÃ¼ge vertikale Geschwindigkeit hinzu
 
         characterController.Move(move);
 
@@ -293,16 +358,16 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         // Seitliche Bewegungen
         Vector3 inputSideStep = transform.right * Input.GetAxis("Horizontal") * walkSpeed;
 
-        // Vorwärts/Rückwärts-Bewegung
+        // VorwÃ¤rts/RÃ¼ckwÃ¤rts-Bewegung
         Vector3 direction = transform.forward;
         float forwardInput = Input.GetAxis("Vertical");
         Vector3 inputPosition = direction * forwardInput * walkSpeed;
 
-        // Zustandserkennung für Laufen
+        // Zustandserkennung fÃ¼r Laufen
         bool wasRunning = networkPlayerState.Value == PlayerState.Run;
         bool isRunning = ActiveRunningActionKey() && forwardInput > 0 && !isOutOfStamina;
 
-        // Anwendung des Laufgeschwindigkeitsbonus, wenn der Spieler rennt und nicht außer Atem ist
+        // Anwendung des Laufgeschwindigkeitsbonus, wenn der Spieler rennt und nicht auÃŸer Atem ist
         if (isRunning)
         {
             inputPosition *= runSpeedOffset;
@@ -330,7 +395,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             isOutOfStamina = false;
         }
 
-        // Kombinieren der seitlichen und vorwärts/rückwärts Bewegungen
+        // Kombinieren der seitlichen und vorwÃ¤rts/rÃ¼ckwÃ¤rts Bewegungen
         Vector3 inputMovement = inputSideStep + inputPosition;
 
         // Aktualisieren des Zustands basierend auf den Eingaben und Ausdauer
@@ -338,7 +403,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
         if (inputMovement != Vector3.zero || isJumping)
         {
-            // Hier fügst du die aktuelle vertikale Geschwindigkeit hinzu, die auch über das Netzwerk synchronisiert werden muss.
+            // Hier fÃ¼gst du die aktuelle vertikale Geschwindigkeit hinzu, die auch Ã¼ber das Netzwerk synchronisiert werden muss.
             UpdateClientPositionAndRotationServerRpc(inputMovement, Vector3.zero, verticalVelocity);
         }
 
@@ -349,7 +414,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             {
                 verticalVelocity = CalculateJumpVerticalSpeed();
                 isJumping = true;
-                jumpCount++;  // Zähle jeden Sprung
+                jumpCount++;  // ZÃ¤hle jeden Sprung
                 UpdateClientPositionAndRotationServerRpc(networkPositionDirection.Value, Vector3.zero, verticalVelocity);
             }
         }
@@ -368,7 +433,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             {
                 isJumping = false;
             }
-            jumpCount = 0;  // Sprungzähler zurücksetzen, wenn der Spieler den Boden berührt
+            jumpCount = 0;  // SprungzÃ¤hler zurÃ¼cksetzen, wenn der Spieler den Boden berÃ¼hrt
         }
     }
 
