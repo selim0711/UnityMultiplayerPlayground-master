@@ -1,4 +1,4 @@
-using Unity.Netcode;
+Ôªøusing Unity.Netcode;
 using UnityEngine;
 using System.Collections;
 using System.Collections.Generic;
@@ -100,6 +100,9 @@ public class GameManager : NetworkBehaviour
     [SerializeField]
     public bool gameRunning = false;
 
+    [SerializeField]
+    private float gameDurationInMinutes = 5f;
+
     private void Awake()
     {
         if (Instance == null)
@@ -189,7 +192,7 @@ public class GameManager : NetworkBehaviour
     public void SetLoggedInUsernameRpc(ulong clientId, string username)
     {
         Vector3 spawnPosition = GetValidSpawnPosition();
-        Quaternion spawnRotation = Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0); // Zuf‰llige Y-Rotation
+        Quaternion spawnRotation = Quaternion.Euler(0, UnityEngine.Random.Range(0, 360), 0); // Zuf√§llige Y-Rotation
 
         var spawnedPlayer = Instantiate(playerPrefab, spawnPosition, spawnRotation);
 
@@ -315,16 +318,24 @@ public class GameManager : NetworkBehaviour
         StartCoroutine(StartCountdown());
 
     }
+
+    public void SetGameDuration(float minutes)
+    {
+        gameDurationInMinutes = minutes;
+        Debug.Log($"üì¢ Spielzeit auf {minutes} Minuten gesetzt!");
+    }
+
     private IEnumerator GameTimer()
     {
-        remainingGameTime.Value = 600; // Set to 10 minutes
+        remainingGameTime.Value = gameDurationInMinutes * 60; // Set to 10 minutes
         while (remainingGameTime.Value > 0)
         {
             yield return new WaitForSeconds(1);
             remainingGameTime.Value--;
         }
+
         gameRunning = false;
-        Debug.Log("Game time expired!");
+        Debug.Log("‚ùå Spielzeit abgelaufen!");
     }
 
 
@@ -352,11 +363,11 @@ public class GameManager : NetworkBehaviour
 
     private void SpawnBallAtRandomLocation()
     {
-        Vector3 ballSpawnPosition = GetValidSpawnPosition(); // Verwenden der gleichen Methode, um eine g¸ltige Position zu erhalten
+        Vector3 ballSpawnPosition = GetValidSpawnPosition(); // Verwenden der gleichen Methode, um eine g√ºltige Position zu erhalten
         if (ballSpawnPosition != Vector3.zero)
         {
-            float spawnHeight = 40f; // Hˆhe, aus der der Ball fallen soll
-            ballSpawnPosition.y += spawnHeight; // Erhˆhen der y-Koordinate um den spawnHeight
+            float spawnHeight = 40f; // H√∂he, aus der der Ball fallen soll
+            ballSpawnPosition.y += spawnHeight; // Erh√∂hen der y-Koordinate um den spawnHeight
             var ballInstance = Instantiate(ballPrefab, ballSpawnPosition, Quaternion.identity); // Verwenden der modifizierten Position
             ballInstance.GetComponent<NetworkObject>().Spawn();
         }

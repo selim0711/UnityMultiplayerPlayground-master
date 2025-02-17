@@ -3899,6 +3899,7 @@ MonoBehaviour:
   countdownText: {fileID: 273690798}
   gameTimerText: {fileID: 637873600}
   gameRunning: 0
+  gameDurationInMinutes: 2
 --- !u!4 &1659622881
 Transform:
   m_ObjectHideFlags: 0

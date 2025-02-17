@@ -19,6 +19,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     [SerializeField]
     private Transform handTransform; // Transform, where the ball should be positioned when held
 
+
     private GameObject heldBall = null;
 
     private float decimalScore;
@@ -31,10 +32,11 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
 
 
+    private bool isUpdatingScore = false;
 
+    private bool isScoreUpdating = false;
 
-
-
+    private Coroutine scoreCoroutine = null;
 
 
 
@@ -124,7 +126,6 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     void Start()
     {
-        StartCoroutine(UpdateScoreEverySecond());
         if (IsClient && IsOwner)
         {
      //       transform.position = new Vector3(Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y), 0,
@@ -140,25 +141,50 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
         }
     }
+    private void StartUpdatingScore()
+    {
+        if (scoreCoroutine == null) // ✅ Stelle sicher, dass nur EINE Coroutine läuft!
+        {
+            scoreCoroutine = StartCoroutine(UpdateScoreEverySecond());
+            Debug.Log("✅ Score-Update gestartet!");
+        }
+    }
+
+    private void StopUpdatingScore()
+    {
+        if (scoreCoroutine != null) // ✅ Nur stoppen, wenn eine läuft
+        {
+            StopCoroutine(scoreCoroutine);
+            scoreCoroutine = null;
+            Debug.Log("❌ Score-Update gestoppt!");
+        }
+    }
 
     private IEnumerator UpdateScoreEverySecond()
     {
         while (true)
         {
-            yield return new WaitForSeconds(1f); // Warte 1 Sekunde
-            UpdatePlayerScoreToServer();
+            yield return new WaitForSeconds(1f);
+
+            if (heldBall != null && !isStunned) // 🏀 Nur wenn der Ball gehalten wird!
+            {
+                UpdatePlayerScoreToServer();
+            }
         }
     }
 
     private void UpdatePlayerScoreToServer()
     {
-        int userId = PlayerPrefs.GetInt("userID", 0); // 🟢 Benutzer-ID aus Speicher abrufen
+        if (isScoreUpdating) return; // 🛑 Falls bereits eine Anfrage läuft, breche ab!
+
+        int userId = PlayerPrefs.GetInt("userID", 0);
         if (userId == 0)
         {
             Debug.LogError("❌ Keine Benutzer-ID gefunden! Ist der Spieler eingeloggt?");
             return;
         }
 
+        isScoreUpdating = true; // ✅ Sperre aktivieren
         StartCoroutine(SendScoreToDatabase(userId, score));
     }
 
@@ -173,17 +199,14 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     public IEnumerator SendScoreToDatabase(int userId, int score)
     {
-        // 🟢 Debugging der gesendeten Daten
-        Debug.Log($"📤 Sende Score: {score} für User ID: {userId}");
-
         ScoreData scoreData = new ScoreData
         {
-            id = userId,  // 🟢 Korrekte Benutzer-ID senden!
-            score = score
+            id = userId,
+            score = 1  // 🟢 Score immer nur +1 pro Sekunde senden
         };
 
         string json = JsonUtility.ToJson(scoreData);
-        Debug.Log($"📄 JSON gesendet: {json}");
+        Debug.Log($"📤 Sende Score: {score} für User ID: {userId}");
 
         byte[] jsonToSend = Encoding.UTF8.GetBytes(json);
 
@@ -193,6 +216,8 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             www.downloadHandler = new DownloadHandlerBuffer();
             www.SetRequestHeader("Content-Type", "application/json");
             yield return www.SendWebRequest();
+
+            isScoreUpdating = false; // ✅ Sperre wieder deaktivieren!
 
             if (www.result != UnityWebRequest.Result.Success)
             {
@@ -232,9 +257,20 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     private void OnTriggerExit(Collider other)
     {
-        if (other.gameObject == heldBall)
+        if (heldBall != null && other.gameObject == heldBall)
         {
-            DropBallServerRpc();
+            Debug.Log("⚠ Spieler hat den Ballbereich verlassen.");
+
+            // ✅ Nur DropBallServerRpc aufrufen, wenn der Ball NICHT mehr in der Hand ist!
+            if (heldBall.transform.parent != handTransform)
+            {
+                Debug.Log("⚠️ Ball wird wirklich fallen gelassen.");
+                DropBallServerRpc();
+            }
+            else
+            {
+                Debug.Log("✅ Ball ist noch in der Hand, nichts tun.");
+            }
         }
     }
 
@@ -278,11 +314,18 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         ClientVisuals();
         HandleJump();
 
-       if (heldBall != null && !isStunned)////////////////////////////////////////////
+        if (heldBall != null && !isStunned)
         {
             decimalScore += 1 * Time.deltaTime;
-            score = Mathf.RoundToInt(decimalScore); // Punkte für das Halten des Balls
-        } 
+            score = Mathf.RoundToInt(decimalScore);
+            StartUpdatingScore(); // ✅ Score-Update nur starten, wenn Ball gehalten wird
+            Debug.Log($"NewScore: {score}");
+        }
+        else
+        {
+            StopUpdatingScore(); // ✅ Stoppe Score-Update, wenn der Ball losgelassen wird
+            decimalScore = score;
+        }
     }
 
 
@@ -290,17 +333,22 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     [ServerRpc(RequireOwnership = false)]
     public void DropBallServerRpc()
     {
-        if (heldBall != null)/////////////////////////////////////////////////////////
+        if (heldBall == null)
         {
-            Ball ballScript = heldBall.GetComponent<Ball>();
-            if (ballScript)
-            {
-                ballScript.ClearOwnerRpc();
-            }
-            heldBall = null;
+            Debug.Log("⚠️ DropBallServerRpc wurde aufgerufen, aber `heldBall` ist bereits `null`. Ignoriere den Aufruf.");
+            return; // 🛑 Falls der Ball bereits entfernt wurde, nichts tun!
         }
-    }
 
+        Ball ballScript = heldBall.GetComponent<Ball>();
+        if (ballScript)
+        {
+            ballScript.ClearOwnerRpc();
+        }
+
+        Debug.Log("⚠️ Spieler hat den Ball fallen gelassen!");
+
+        heldBall = null; // ✅ Sicherstellen, dass `heldBall` wirklich entfernt wurde
+    }
 
 
 
