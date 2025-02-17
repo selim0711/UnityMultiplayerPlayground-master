@@ -272,7 +272,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
                 Debug.Log("✅ Ball ist noch in der Hand, nichts tun.");
             }
         }
-    }
+    } 
 
 
     private IEnumerator StunPlayer(float duration)

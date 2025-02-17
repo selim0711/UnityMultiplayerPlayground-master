@@ -62,6 +62,7 @@ public class GameManager : NetworkBehaviour
 {
     public static GameManager Instance { get; private set; }
 
+
     private Dictionary<ulong, string> clientUsernames = new Dictionary<ulong, string>();
     private List<PlayerBombHandler> playersInGame = new List<PlayerBombHandler>();
 
