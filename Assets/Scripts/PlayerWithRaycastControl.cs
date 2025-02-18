@@ -7,15 +7,12 @@ using Cinemachine;
 using System.Collections;
 using UnityEngine.Networking;
 using System.Text;
+using UnityEngine.SocialPlatforms.Impl;
 
 [RequireComponent(typeof(NetworkTransform))]
 [RequireComponent(typeof(NetworkObject))]
 public class PlayerWithRaycastControl : NetworkBehaviour
 {
-
-   
-
-
     [SerializeField]
     private Transform handTransform; // Transform, where the ball should be positioned when held
 
@@ -24,7 +21,9 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     private float decimalScore;
     [SerializeField]
+
     private int score = 0; // Player's score
+    
 
     [SerializeField]
     private bool isStunned = false; // Stun-Zustand des Spielers
@@ -108,16 +107,11 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     [SerializeField]
     private float jumpHeight = 2.0f;
-
-    // Zustand für den Spieler, ob er sich in der Luft befindet
     private bool isJumping = false;
     private float verticalVelocity = 0f;
     private int jumpCount = 0;
     private const int maxJumps = 2;
-    /*
-    [Header("Camera Settings")]
-    public float mouseSensitivity = 100f;  // Neue Sensibilitätseinstellung
-    */
+
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
@@ -185,6 +179,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         }
 
         isScoreUpdating = true; // ✅ Sperre aktivieren
+     // StartCoroutine(SendScoreToDatabase(userId, score));
         StartCoroutine(SendScoreToDatabase(userId, score));
     }
 
@@ -314,20 +309,19 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         ClientVisuals();
         HandleJump();
 
-        if (heldBall != null && !isStunned)
-        {
-            decimalScore += 1 * Time.deltaTime;
-            score = Mathf.RoundToInt(decimalScore);
-            StartUpdatingScore(); // ✅ Score-Update nur starten, wenn Ball gehalten wird
-            Debug.Log($"NewScore: {score}");
-        }
-        else
-        {
-            StopUpdatingScore(); // ✅ Stoppe Score-Update, wenn der Ball losgelassen wird
-            decimalScore = score;
-        }
+         if (heldBall != null && !isStunned)
+         {
+             decimalScore += 1 * Time.deltaTime;
+             score = Mathf.RoundToInt(decimalScore);
+             StartUpdatingScore(); // ✅ Score-Update nur starten, wenn Ball gehalten wird
+             Debug.Log($"NewScore: {score}");
+         }
+         else
+         {
+             StopUpdatingScore(); // ✅ Stoppe Score-Update, wenn der Ball losgelassen wird
+             decimalScore = score;
+         } 
     }
-
 
 
     [ServerRpc(RequireOwnership = false)]
@@ -451,7 +445,6 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
         if (inputMovement != Vector3.zero || isJumping)
         {
-            // Hier fügst du die aktuelle vertikale Geschwindigkeit hinzu, die auch über das Netzwerk synchronisiert werden muss.
             UpdateClientPositionAndRotationServerRpc(inputMovement, Vector3.zero, verticalVelocity);
         }
 
@@ -462,7 +455,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             {
                 verticalVelocity = CalculateJumpVerticalSpeed();
                 isJumping = true;
-                jumpCount++;  // Zähle jeden Sprung
+                jumpCount++;  
                 UpdateClientPositionAndRotationServerRpc(networkPositionDirection.Value, Vector3.zero, verticalVelocity);
             }
         }
@@ -481,7 +474,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             {
                 isJumping = false;
             }
-            jumpCount = 0;  // Sprungzähler zurücksetzen, wenn der Spieler den Boden berührt
+            jumpCount = 0; 
         }
     }
 

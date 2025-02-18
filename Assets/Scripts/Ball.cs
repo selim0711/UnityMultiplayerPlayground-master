@@ -32,8 +32,7 @@ public class Ball : NetworkBehaviour
     {
         followTarget = hand;
         localPosition = Vector3.zero;
-        transform.SetParent(hand, true); // ✅ Der Ball wird jetzt als Kind der Hand gesetzt
-        gameObject.GetComponent<Rigidbody>().isKinematic = true; // ✅ Physik deaktivieren, damit der Ball nicht herumzappelt
+        gameObject.GetComponent<Rigidbody>().isKinematic = true; ; // ✅ Der Ball wird jetzt als Kind der Hand gesetzt
     }
 
     void Update()
