@@ -8,11 +8,19 @@ using System.Collections;
 using UnityEngine.Networking;
 using System.Text;
 using UnityEngine.SocialPlatforms.Impl;
+using System;
 
 [RequireComponent(typeof(NetworkTransform))]
 [RequireComponent(typeof(NetworkObject))]
 public class PlayerWithRaycastControl : NetworkBehaviour
 {
+
+    public static event Action<PlayerWithRaycastControl> OnPlayerReady;
+
+    private Transform currentPlatform = null;
+    private Vector3 platformPreviousPosition;
+
+
     [SerializeField]
     private Transform handTransform; // Transform, where the ball should be positioned when held
 
@@ -22,8 +30,12 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     private float decimalScore;
     [SerializeField]
 
-    private int score = 0; // Player's score
-    
+
+
+
+
+    public NetworkVariable<int> networkScore = new NetworkVariable<int>(0);
+
 
     [SerializeField]
     private bool isStunned = false; // Stun-Zustand des Spielers
@@ -131,8 +143,8 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             {
                 staminaSlider = UIManager.Instance.CreateStaminaSliderForPlayer(NetworkManager.Singleton.LocalClientId);
             }
-           
 
+            
         }
     }
     private void StartUpdatingScore()
@@ -167,6 +179,15 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         }
     }
 
+    public override void OnNetworkSpawn()
+    {
+        if (IsOwner)
+        {
+            OnPlayerReady?.Invoke(this);
+            Debug.Log("FUNKTIONIERRRRRRRRRRRRRRRRRRRRRRRT");
+        }
+    }
+
     private void UpdatePlayerScoreToServer()
     {
         if (isScoreUpdating) return; // 🛑 Falls bereits eine Anfrage läuft, breche ab!
@@ -180,7 +201,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
         isScoreUpdating = true; // ✅ Sperre aktivieren
      // StartCoroutine(SendScoreToDatabase(userId, score));
-        StartCoroutine(SendScoreToDatabase(userId, score));
+        StartCoroutine(SendScoreToDatabase(userId, networkScore.Value));
     }
 
 
@@ -205,7 +226,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
         byte[] jsonToSend = Encoding.UTF8.GetBytes(json);
 
-        using (UnityWebRequest www = new UnityWebRequest("http://192.168.8.157/api/updateScore.php", "POST"))
+        using (UnityWebRequest www = new UnityWebRequest("http://192.168.0.222/api/updateScore.php", "POST"))
         {
             www.uploadHandler = new UploadHandlerRaw(jsonToSend);
             www.downloadHandler = new DownloadHandlerBuffer();
@@ -312,14 +333,14 @@ public class PlayerWithRaycastControl : NetworkBehaviour
          if (heldBall != null && !isStunned)
          {
              decimalScore += 1 * Time.deltaTime;
-             score = Mathf.RoundToInt(decimalScore);
+            networkScore.Value = Mathf.RoundToInt(decimalScore);
              StartUpdatingScore(); // ✅ Score-Update nur starten, wenn Ball gehalten wird
-             Debug.Log($"NewScore: {score}");
+             Debug.Log($"NewScore: {networkScore.Value}");
          }
          else
          {
              StopUpdatingScore(); // ✅ Stoppe Score-Update, wenn der Ball losgelassen wird
-             decimalScore = score;
+             decimalScore = networkScore.Value;
          } 
     }
 
@@ -524,7 +545,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         networkPlayerState.Value = state;
         if (state == PlayerState.Punch)
         {
-            networkPlayerPunchBlend.Value = Random.Range(0.0f, 1.0f);
+           
         }
     }
 
@@ -577,6 +598,10 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             }
         }
     }
+
+
+
+
 }
 
 

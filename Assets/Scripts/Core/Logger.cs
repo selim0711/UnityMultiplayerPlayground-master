@@ -3,6 +3,7 @@ using DilmerGames.Core.Singletons;
 using TMPro;
 using UnityEngine;
 using System;
+using System.Collections;
 
 public class Logger : Singleton<Logger>
 {
@@ -14,6 +15,8 @@ public class Logger : Singleton<Logger>
 
     [SerializeField]
     private int maxLines = 15;
+
+    private float messageDuration = 3.0f;
 
     void Awake()
     {
@@ -52,6 +55,14 @@ public class Logger : Singleton<Logger>
     {
         ClearLines();
         debugAreaText.text += $"<color=\"yellow\">{DateTime.Now.ToString("HH:mm:ss.fff")} {message}</color>\n";
+    }
+
+    private IEnumerator RemoveMessageAfterDelay(string message, float delay)
+    {
+        ClearLines(); // Clear lines if max lines exceeded
+        debugAreaText.text += message;
+        yield return new WaitForSeconds(delay);
+        debugAreaText.text = debugAreaText.text.Replace(message, "");
     }
 
     private void ClearLines()

@@ -236,17 +236,6 @@ void Update()
             }
         };
     }
-    private void AssignHostUsername()
-    {
-        if (NetworkManager.Singleton.IsHost)
-        {
-            ulong hostClientId = NetworkManager.Singleton.LocalClientId;
-            string hostUsername = "HostUsername"; // Replace with actual input
-            GameManager.Instance.SetLoggedInUsernameRpc(hostClientId, hostUsername);
-            Logger.Instance.LogInfo($"[Host] Assigned username '{hostUsername}' to ClientId {hostClientId}");
-        }
-    }
-
 
 
     private void ResetNetworkManager()

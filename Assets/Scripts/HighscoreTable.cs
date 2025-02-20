@@ -16,7 +16,7 @@ public class HighscoreTable : MonoBehaviour
 
     IEnumerator FetchHighScores()
     {
-        using (UnityWebRequest www = UnityWebRequest.Get("http://192.168.8.157/api/fetchHighScores.php"))
+        using (UnityWebRequest www = UnityWebRequest.Get("http://192.168.0.222/api/fetchHighScores.php"))
         {
             yield return www.SendWebRequest();
 

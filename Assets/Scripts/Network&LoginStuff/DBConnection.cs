@@ -9,12 +9,18 @@ public class DBConnection : MonoBehaviour
     public static string usernameAH = "";
 
     
-    public static string testingURL = "http://192.168.8.157/api/user.php";
-    public static string userRegisterURL = "http://192.168.8.157/api/UserLogin.php";
+    public static string testingURL = "http://192.168.0.222/api/user.php";
+    public static string userRegisterURL = "http://192.168.0.222/api/UserLogin.php";
     
     public bool loggedIn = false;
-    public event Action OnLoggedIn;
+    public static event Action OnLoggedIn;
     private string currentUsername;
+
+    private void Start()
+    {
+        PlayerPrefs.DeleteKey("userID"); // ✅ Clear the saved ID when the game starts
+        PlayerPrefs.Save();
+    }
 
 
     IEnumerator Get(string url)
@@ -42,7 +48,7 @@ public class DBConnection : MonoBehaviour
         };
         string json = JsonUtility.ToJson(loginData);
 
-        using (var request = new UnityWebRequest("http://192.168.8.157/api/UserLogin.php", "POST"))
+        using (var request = new UnityWebRequest("http://192.168.0.222/api/UserLogin.php", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
@@ -59,20 +65,16 @@ public class DBConnection : MonoBehaviour
                     {
                         Debug.Log($"✅ Login successful! Username: {response.UserName}, ID: {response.id}");
 
-                        PlayerPrefs.SetInt("userID", response.id);
+                        PlayerPrefs.SetInt("userID", response.id); // ✅ Save only after successful login
                         PlayerPrefs.Save();
+
                         int savedId = PlayerPrefs.GetInt("userID", 0);
-                        Debug.Log($"🔍 Gespeicherte User ID: {savedId}");
+                        Debug.Log($"🔍 Saved User ID: {savedId}");
 
-
-                        // Speichere den Benutzernamen
-                        currentUsername = username;
                         usernameAH = username;
+                        loggedIn = true;
 
-                        ulong localClientId = NetworkManager.Singleton.LocalClientId;
-                        GameManager.Instance.SetLoggedInUsernameRpc(localClientId, response.UserName);
-
-                        OnLoggedIn?.Invoke();
+                        OnLoggedIn?.Invoke(); // ✅ Only invoke this event after successful login
                     }
                     else
                     {
@@ -90,6 +92,7 @@ public class DBConnection : MonoBehaviour
             }
         }
     }
+
 
     // Methode, um den aktuellen Benutzernamen zu erhalten
     public string GetUsername()
@@ -150,7 +153,7 @@ public class DBConnection : MonoBehaviour
         form.AddField("userId", userId);
         form.AddField("highScore", highScore);
 
-        using (UnityWebRequest www = UnityWebRequest.Post("http://192.168.8.157/api/updateHighScore.php", form))
+        using (UnityWebRequest www = UnityWebRequest.Post("http://192.168.0.222/api/updateHighScore.php", form))
         {
             yield return www.SendWebRequest();
 
@@ -167,7 +170,7 @@ public class DBConnection : MonoBehaviour
 
     public IEnumerator FetchHighScores()
     {
-        using (UnityWebRequest www = UnityWebRequest.Get("http://192.168.8.157/api/fetchHighScores.php"))
+        using (UnityWebRequest www = UnityWebRequest.Get("http://192.168.0.222/api/fetchHighScores.php"))
         {
             yield return www.SendWebRequest();
 
@@ -183,6 +186,7 @@ public class DBConnection : MonoBehaviour
             }
         }
     }
+
 }
 
 

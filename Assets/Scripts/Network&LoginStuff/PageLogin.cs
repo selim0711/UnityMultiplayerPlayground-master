@@ -29,7 +29,7 @@ public class PageLogin : MonoBehaviour
          //   Debug.Log("Attempted registration");
         });
 
-        connection.OnLoggedIn += StartGame;
+        DBConnection.OnLoggedIn += StartGame;
     }
 
     private void StartGame()

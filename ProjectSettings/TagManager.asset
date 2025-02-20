@@ -8,6 +8,7 @@ TagManager:
   - BombTimer
   - StaminaSlider
   - Ball
+  - MovingPlatform
   layers:
   - Default
   - TransparentFX
