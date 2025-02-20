@@ -17,44 +17,23 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     public static event Action<PlayerWithRaycastControl> OnPlayerReady;
 
-    private Transform currentPlatform = null;
-    private Vector3 platformPreviousPosition;
-
-
+    //Ball logik
     [SerializeField]
     private Transform handTransform; // Transform, where the ball should be positioned when held
-
-
     private GameObject heldBall = null;
 
-    private float decimalScore;
-    [SerializeField]
-
-
-
-
-
-    public NetworkVariable<int> networkScore = new NetworkVariable<int>(0);
-
-
+    //Stun Logik
     [SerializeField]
     private bool isStunned = false; // Stun-Zustand des Spielers
     private float stunDuration = 5f;
 
-
-
-    private bool isUpdatingScore = false;
-
+    //Score variablen
+    public NetworkVariable<int> networkScore = new NetworkVariable<int>(0);
+    private float decimalScore;
     private bool isScoreUpdating = false;
-
     private Coroutine scoreCoroutine = null;
 
-
-
-
-
-
-
+    //Stamina Variablen
     [SerializeField]
     private NetworkVariable<float> networkPlayerStamina = new NetworkVariable<float>(100f);
 
@@ -68,9 +47,9 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     private float staminaDepletionRate = 20f;
 
     private Slider staminaSlider;
-
     private bool isOutOfStamina = false;
 
+    //Movement variablen
     [SerializeField]
     private float walkSpeed = 3.5f;
 
@@ -81,10 +60,6 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     private float rotationSpeed = 3.5f;
 
     [SerializeField]
-    private Vector2 defaultInitialPositionOnPlane = new Vector2(-7, -7);
-
-
-    [SerializeField]
     private NetworkVariable<Vector3> networkPositionDirection = new NetworkVariable<Vector3>();
 
     [SerializeField]
@@ -93,30 +68,11 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     [SerializeField]
     private NetworkVariable<PlayerState> networkPlayerState = new NetworkVariable<PlayerState>();
 
-
-    [SerializeField]
-    private NetworkVariable<float> networkPlayerHealth = new NetworkVariable<float>(1000);
-
-    [SerializeField]
-    private NetworkVariable<float> networkPlayerPunchBlend = new NetworkVariable<float>();
-
-    [SerializeField]
-    private GameObject leftHand;
-
-    [SerializeField]
-    private GameObject rightHand;
-
-    [SerializeField]
-    private float minPunchDistance = 1.0f;
-
     private CharacterController characterController;
 
-    private Vector3 oldInputPosition = Vector3.zero;
-    private Vector3 oldInputRotation = Vector3.zero;
     private PlayerState oldPlayerState = PlayerState.Idle;
 
-    private Animator animator;
-
+    //Sprung variablen
     [SerializeField]
     private float jumpHeight = 2.0f;
     private bool isJumping = false;
@@ -127,29 +83,22 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
-        animator = GetComponent<Animator>();
     }
 
     void Start()
     {
         if (IsClient && IsOwner)
         {
-     //       transform.position = new Vector3(Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y), 0,
-             //      Random.Range(defaultInitialPositionOnPlane.x, defaultInitialPositionOnPlane.y));
-
-
             staminaSlider = GameObject.FindGameObjectWithTag("StaminaSlider").GetComponent<Slider>();
             if (IsClient && IsOwner)
             {
                 staminaSlider = UIManager.Instance.CreateStaminaSliderForPlayer(NetworkManager.Singleton.LocalClientId);
-            }
-
-            
+            }  
         }
     }
     private void StartUpdatingScore()
     {
-        if (scoreCoroutine == null) // ✅ Stelle sicher, dass nur EINE Coroutine läuft!
+        if (scoreCoroutine == null) //nur EINE coroutine läuft damit score nicht mehrfach gezählt wird
         {
             scoreCoroutine = StartCoroutine(UpdateScoreEverySecond());
             Debug.Log("✅ Score-Update gestartet!");
@@ -158,7 +107,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     private void StopUpdatingScore()
     {
-        if (scoreCoroutine != null) // ✅ Nur stoppen, wenn eine läuft
+        if (scoreCoroutine != null) //nur stoppen wenn eine läuft
         {
             StopCoroutine(scoreCoroutine);
             scoreCoroutine = null;
@@ -172,7 +121,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         {
             yield return new WaitForSeconds(1f);
 
-            if (heldBall != null && !isStunned) // 🏀 Nur wenn der Ball gehalten wird!
+            if (heldBall != null && !isStunned)
             {
                 UpdatePlayerScoreToServer();
             }
@@ -184,13 +133,12 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         if (IsOwner)
         {
             OnPlayerReady?.Invoke(this);
-            Debug.Log("FUNKTIONIERRRRRRRRRRRRRRRRRRRRRRRT");
         }
     }
 
     private void UpdatePlayerScoreToServer()
     {
-        if (isScoreUpdating) return; // 🛑 Falls bereits eine Anfrage läuft, breche ab!
+        if (isScoreUpdating) return;
 
         int userId = PlayerPrefs.GetInt("userID", 0);
         if (userId == 0)
@@ -198,12 +146,9 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             Debug.LogError("❌ Keine Benutzer-ID gefunden! Ist der Spieler eingeloggt?");
             return;
         }
-
-        isScoreUpdating = true; // ✅ Sperre aktivieren
-     // StartCoroutine(SendScoreToDatabase(userId, score));
+        isScoreUpdating = true; 
         StartCoroutine(SendScoreToDatabase(userId, networkScore.Value));
     }
-
 
     [System.Serializable]
     public class ScoreData
@@ -212,13 +157,12 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         public int score;
     }
 
-
     public IEnumerator SendScoreToDatabase(int userId, int score)
     {
         ScoreData scoreData = new ScoreData
         {
             id = userId,
-            score = 1  // 🟢 Score immer nur +1 pro Sekunde senden
+            score = 1  //score plus 1 pro sekunde
         };
 
         string json = JsonUtility.ToJson(scoreData);
@@ -226,14 +170,14 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
         byte[] jsonToSend = Encoding.UTF8.GetBytes(json);
 
-        using (UnityWebRequest www = new UnityWebRequest("http://192.168.0.222/api/updateScore.php", "POST"))
+        using (UnityWebRequest www = new UnityWebRequest("http://192.168.0.222/api/updateScore.php", "POST"))//IP MUSS MAN ANPASSEN!!!
         {
             www.uploadHandler = new UploadHandlerRaw(jsonToSend);
             www.downloadHandler = new DownloadHandlerBuffer();
             www.SetRequestHeader("Content-Type", "application/json");
             yield return www.SendWebRequest();
 
-            isScoreUpdating = false; // ✅ Sperre wieder deaktivieren!
+            isScoreUpdating = false;
 
             if (www.result != UnityWebRequest.Result.Success)
             {
@@ -245,9 +189,6 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             }
         }
     }
-
-
-
 
     private void OnTriggerEnter(Collider other)
     {
@@ -265,7 +206,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             if (ballScript && ballScript.CanInteract(NetworkManager.Singleton.LocalClientId))
             {
                 ballScript.InteractWithBallRpc(NetworkManager.Singleton.LocalClientId);
-                heldBall = other.gameObject; // Halte den Ball
+                heldBall = other.gameObject;
                 heldBall.GetComponent<Ball>().SetOwner(transform, handTransform);
             }
         }
@@ -275,21 +216,19 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     {
         if (heldBall != null && other.gameObject == heldBall)
         {
-            Debug.Log("⚠ Spieler hat den Ballbereich verlassen.");
+            Debug.Log("Spieler hat den Ballbereich verlassen");
 
-            // ✅ Nur DropBallServerRpc aufrufen, wenn der Ball NICHT mehr in der Hand ist!
             if (heldBall.transform.parent != handTransform)
             {
-                Debug.Log("⚠️ Ball wird wirklich fallen gelassen.");
+                Debug.Log("Ball wird wirklich fallen gelassen");
                 DropBallServerRpc();
             }
             else
             {
-                Debug.Log("✅ Ball ist noch in der Hand, nichts tun.");
+                Debug.Log("Ball ist noch in der Hand.");
             }
         }
     } 
-
 
     private IEnumerator StunPlayer(float duration)
     {
@@ -298,32 +237,18 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         isStunned = false;
     }
 
-
-
-
-
-
-
-
-
-
-
-
     private void Update()
     {
         if (IsOwner)
         {
             ClientInput();
             UpdateStaminaUI();
-            
-            //HandleMouseRotation();
         }
 
         if (IsServer)
         {
             HandleStaminaRegenerationAndDepletion();
         }
-
 
         HandleGravity();
         ClientMoveAndRotate();
@@ -334,16 +259,15 @@ public class PlayerWithRaycastControl : NetworkBehaviour
          {
              decimalScore += 1 * Time.deltaTime;
             networkScore.Value = Mathf.RoundToInt(decimalScore);
-             StartUpdatingScore(); // ✅ Score-Update nur starten, wenn Ball gehalten wird
+             StartUpdatingScore();
              Debug.Log($"NewScore: {networkScore.Value}");
          }
          else
          {
-             StopUpdatingScore(); // ✅ Stoppe Score-Update, wenn der Ball losgelassen wird
+             StopUpdatingScore();
              decimalScore = networkScore.Value;
          } 
     }
-
 
     [ServerRpc(RequireOwnership = false)]
     public void DropBallServerRpc()
@@ -351,7 +275,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         if (heldBall == null)
         {
             Debug.Log("⚠️ DropBallServerRpc wurde aufgerufen, aber `heldBall` ist bereits `null`. Ignoriere den Aufruf.");
-            return; // 🛑 Falls der Ball bereits entfernt wurde, nichts tun!
+            return;
         }
 
         Ball ballScript = heldBall.GetComponent<Ball>();
@@ -362,24 +286,8 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
         Debug.Log("⚠️ Spieler hat den Ball fallen gelassen!");
 
-        heldBall = null; // ✅ Sicherstellen, dass `heldBall` wirklich entfernt wurde
+        heldBall = null;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
     private void HandleGravity()
     {
@@ -396,7 +304,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     private void ClientMoveAndRotate()
     {
         Vector3 move = networkPositionDirection.Value * Time.deltaTime;
-        move += verticalVelocity * Vector3.up * Time.deltaTime; // Füge vertikale Geschwindigkeit hinzu
+        move += verticalVelocity * Vector3.up * Time.deltaTime; //füge vertikale Geschwindigkeit hinzu
 
         characterController.Move(move);
 
@@ -406,13 +314,12 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         }
     }
 
-
     private void ClientVisuals()
     {
         if (oldPlayerState != networkPlayerState.Value)
         {
             oldPlayerState = networkPlayerState.Value;
-            animator.SetTrigger($"{networkPlayerState.Value}");
+           
         }
     }
 
