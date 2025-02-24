@@ -79,6 +79,7 @@ public class GameManager : NetworkBehaviour
 
     [SerializeField]
     private GameObject ballPrefab;
+    private GameObject currentBallInstance;
 
     [SerializeField]
     private GameObject playerPrefab = null;
@@ -95,6 +96,8 @@ public class GameManager : NetworkBehaviour
 
     [SerializeField]
     private TMP_Text gameTimerText;
+    [SerializeField]
+    private TMP_Text gameTimerText3D;
 
     [SerializeField]
     public bool gameRunning = false;
@@ -335,8 +338,29 @@ public class GameManager : NetworkBehaviour
 
         gameRunning = false;
         Debug.Log("❌ Spielzeit abgelaufen!");
+
+        PostGameReset();
     }
 
+    private void PostGameReset()
+    {
+        // Despawnen des Balls, wenn vorhanden
+        if (currentBallInstance != null)
+        {
+            Destroy(currentBallInstance);
+            currentBallInstance = null;
+            Debug.Log("🏀 Ball despawned!");
+        }
+
+        // Setze den Spielstatus zurück und aktiviere den Start-Button
+        gameRunning = false;
+        if (startGameButton != null)
+        {
+            startGameButton.gameObject.SetActive(true);
+        }
+
+        // Weitere Resets können hier hinzugefügt werden, z.B. Reset der Spielerpunkte oder ähnliches
+    }
 
     private void UpdateGameTimerUI(float time)
     {
@@ -344,6 +368,7 @@ public class GameManager : NetworkBehaviour
         {
             TimeSpan timeSpan = TimeSpan.FromSeconds(time);
             gameTimerText.text = string.Format("{0:D2}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
+            gameTimerText3D.text = string.Format("{0:D2}:{1:D2}", timeSpan.Minutes, timeSpan.Seconds);
         }
     }
     private IEnumerator StartCountdown()
@@ -360,6 +385,7 @@ public class GameManager : NetworkBehaviour
         SpawnBallAtRandomLocation();
     }
 
+
     private void SpawnBallAtRandomLocation()
     {
         Vector3 ballSpawnPosition = GetValidSpawnPosition(); // Verwenden der gleichen Methode, um eine gültige Position zu erhalten
@@ -367,8 +393,8 @@ public class GameManager : NetworkBehaviour
         {
             float spawnHeight = 40f; // Höhe, aus der der Ball fallen soll
             ballSpawnPosition.y += spawnHeight; // Erhöhen der y-Koordinate um den spawnHeight
-            var ballInstance = Instantiate(ballPrefab, ballSpawnPosition, Quaternion.identity); // Verwenden der modifizierten Position
-            ballInstance.GetComponent<NetworkObject>().Spawn();
+            currentBallInstance = Instantiate(ballPrefab, ballSpawnPosition, Quaternion.identity); // Erstellen des Balls an der modifizierten Position
+            currentBallInstance.GetComponent<NetworkObject>().Spawn();
         }
         else
         {

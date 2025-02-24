@@ -360,7 +360,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d5a57f767e5e46a458fc5d3c628d0cbb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  GlobalObjectIdHash: 2745916272
+  GlobalObjectIdHash: 4155392143
   InScenePlacedSourceGlobalObjectIdHash: 0
   AlwaysReplicateAsRoot: 0
   SynchronizeTransform: 1
@@ -413,9 +413,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   handTransform: {fileID: 28601323905070412}
+  isStunned: 0
   networkScore:
     m_InternalValue: 0
-  isStunned: 0
   networkPlayerStamina:
     m_InternalValue: 100
   maxStamina: 100
@@ -424,20 +424,12 @@ MonoBehaviour:
   walkSpeed: 6
   runSpeedOffset: 4
   rotationSpeed: 8
-  defaultInitialPositionOnPlane: {x: -4, y: 4}
   networkPositionDirection:
     m_InternalValue: {x: 0, y: 0, z: 0}
   networkRotationDirection:
     m_InternalValue: {x: 0, y: 0, z: 0}
   networkPlayerState:
     m_InternalValue: 0
-  networkPlayerHealth:
-    m_InternalValue: 1000
-  networkPlayerPunchBlend:
-    m_InternalValue: 0
-  leftHand: {fileID: 0}
-  rightHand: {fileID: 0}
-  minPunchDistance: 1
   jumpHeight: 5
 --- !u!114 &2416264119302053026
 MonoBehaviour:

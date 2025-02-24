@@ -7,9 +7,13 @@ using System.Net;
 using Unity.Netcode.Transports.UTP;
 using System.Data.Common;
 using System.Collections;
+using UnityEngine.Audio;
 
 public class UIManager : Singleton<UIManager>
 {
+    [SerializeField]
+    private AudioMixer mainAudioMixer;
+
     [SerializeField]
     private Button startServerButton;
 
@@ -46,6 +50,13 @@ public class UIManager : Singleton<UIManager>
     private GameObject[] uiElementsToDeactivateOnHost;
     [SerializeField]
     private GameObject[] uiElementsToDeactivateOnJoin;
+
+    //Deaktivieren der Musik
+    public void SetMusicVolume(float volume)
+    {
+        mainAudioMixer.SetFloat("MusicVolume", volume);
+    }
+
     private void DeactivateUIElements(GameObject[] elements)
     {
         foreach (GameObject element in elements)
@@ -63,6 +74,7 @@ public class UIManager : Singleton<UIManager>
 
     private void Awake()
     {
+        mainAudioMixer.SetFloat("MusicVolume", 0);
         Cursor.visible = true;
     }
     
@@ -107,6 +119,7 @@ void Update()
             {
                 Logger.Instance.LogInfo("Server started...");
                 SetupHostOrServerCallbacks();
+                SetMusicVolume(-80);
             }
             else
             {
@@ -122,6 +135,7 @@ void Update()
                 string localIP = GetLocalIPAddress();
                 Logger.Instance.LogInfo($"Host started... Local IP Address: {localIP}");
                 DeactivateUIElements(uiElementsToDeactivateOnHost);
+                SetMusicVolume(-80);
 
                 // Display the IP address on UI or any relevant component
                 // Update any relevant UI component to show the IP address to users
@@ -157,6 +171,7 @@ void Update()
                 Logger.Instance.LogInfo("Client started...");
                 SetupClientCallbacks(); // Setup callbacks for client-related events
                DeactivateUIElements(uiElementsToDeactivateOnJoin);
+               SetMusicVolume(-80);
             }
             else
             {
@@ -182,6 +197,7 @@ void Update()
                     Logger.Instance.LogInfo($"Attempting to connect to server at {ipInputField.text}...");
                     ResetNetworkManager();
                     DeactivateUIElements(uiElementsToDeactivateOnJoin);
+                    SetMusicVolume(-80);
                 }
                 else
                 {

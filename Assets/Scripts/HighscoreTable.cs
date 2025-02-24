@@ -7,76 +7,67 @@ using TMPro;
 
 public class HighscoreTable : MonoBehaviour
 {
-    public TMP_Text[] scoreTexts; // Array of TextMesh Pro text objects
+    public TMP_Text[] highscoreTexts;
+    private string highscoreURL = "http://192.168.0.222/api/get_highscores.php";
 
-    void Start()
+    private void Start()
     {
-        StartCoroutine(FetchHighScores());
+        StartCoroutine(GetHighscores());
     }
 
-    IEnumerator FetchHighScores()
+    IEnumerator GetHighscores()
     {
-        using (UnityWebRequest www = UnityWebRequest.Get("http://192.168.0.222/api/fetchHighScores.php"))
-        {
-            yield return www.SendWebRequest();
+        UnityWebRequest request = UnityWebRequest.Get(highscoreURL);
+        yield return request.SendWebRequest();
 
-            if (www.result != UnityWebRequest.Result.Success)
+        if (request.result == UnityWebRequest.Result.Success)
+        {
+            string jsonResponse = request.downloadHandler.text;
+            HighscoreData data = JsonUtility.FromJson<HighscoreData>(jsonResponse);
+
+            if (data.success)
             {
-                Debug.LogError($"Failed to fetch high scores: {www.error}");
+                DisplayHighscores(data.highscores);
             }
             else
             {
-                UpdateHighscoreDisplay(www.downloadHandler.text);
+                Debug.LogError("Fehler: " + data.message);
             }
+        }
+        else
+        {
+            Debug.LogError("Fehler beim Laden der Highscores: " + request.error);
         }
     }
 
-    void UpdateHighscoreDisplay(string jsonString)
+    void DisplayHighscores(HighscoreEntry[] highscores)
     {
-        try
+        for (int i = 0; i < highscoreTexts.Length; i++)
         {
-            HighScores scores = JsonUtility.FromJson<HighScores>(jsonString);
-
-            if (scores.success && scores.highscores != null) // Check success and if highscores is not null
+            if (i < highscores.Length)
             {
-                int index = 0;
-                foreach (var entry in scores.highscores)
-                {
-                    if (index < scoreTexts.Length)
-                    {
-                        scoreTexts[index].text = $"{index + 1}. {entry.name} - {entry.score}";
-                        index++;
-                    }
-                }
-
-                // Clear any remaining text slots
-                for (; index < scoreTexts.Length; index++)
-                {
-                    scoreTexts[index].text = "";
-                }
+                highscoreTexts[i].text = $"{i + 1}. {highscores[i].name} - {highscores[i].score} Punkte";
             }
             else
             {
-                Debug.LogError("No highscores found or success is false.");
+                highscoreTexts[i].text = $"{i + 1}. ---";
             }
         }
-        catch (System.Exception e)
-        {
-            Debug.LogError($"Error parsing JSON: {e.Message}\nJSON: {jsonString}");
-        }
     }
+}
 
-    [System.Serializable]
-    public class HighScores
-    {
-        public bool success;
-        public ScoreEntry[] highscores; // This should match the key in your JSON
-    }
+// Hilfsklassen für JSON-Daten
+[System.Serializable]
+public class HighscoreData
+{
+    public bool success;
+    public string message;
+    public HighscoreEntry[] highscores;
+}
 
-    [System.Serializable]
-    public class ScoreEntry
-    {
-        public string name;
-        public int score; // Ensure this is an int if it's always a whole number
-    }
+[System.Serializable]
+public class HighscoreEntry
+{
+    public string name;
+    public int score;
 }
