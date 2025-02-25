@@ -9,6 +9,8 @@ TagManager:
   - StaminaSlider
   - Ball
   - MovingPlatform
+  - SpeedItem
+  - JumpItem
   layers:
   - Default
   - TransparentFX

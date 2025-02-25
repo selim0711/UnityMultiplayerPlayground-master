@@ -9,8 +9,8 @@ public class DBConnection : MonoBehaviour
     public static string usernameAH = "";
 
     
-    public static string testingURL = "http://192.168.0.222/api/user.php";
-    public static string userRegisterURL = "http://192.168.0.222/api/UserLogin.php";
+    public static string testingURL = "http://localhost/api/user.php";
+    public static string userRegisterURL = "http://localhost/api/UserLogin.php";
     
     public bool loggedIn = false;
     public static event Action OnLoggedIn;
@@ -48,7 +48,7 @@ public class DBConnection : MonoBehaviour
         };
         string json = JsonUtility.ToJson(loginData);
 
-        using (var request = new UnityWebRequest("http://192.168.0.222/api/UserLogin.php", "POST"))
+        using (var request = new UnityWebRequest("http://localhost/api/UserLogin.php", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);

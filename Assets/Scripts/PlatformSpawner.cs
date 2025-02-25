@@ -36,20 +36,9 @@ public class PlatformSpawner : MonoBehaviour
             );
 
             GameObject newPlatform = Instantiate(platformPrefab, spawnPosition, Quaternion.identity, platformsContainer);
-            newPlatform.name = "Moving Platform " + i;
+            newPlatform.name = "Speed Item" + i;
 
-            // Ensure the movement is only vertical
-            Vector3 direction = Vector3.up;  // Set direction strictly upwards
-            float distance = Random.Range(7f, 20f);
-            float speed = Random.Range(0.2f, 0.5f);
 
-            MovingPlatform movingPlatform = newPlatform.GetComponent<MovingPlatform>();
-            if (movingPlatform != null)
-            {
-                movingPlatform.settings.direction = direction;
-                movingPlatform.settings.distance = distance;
-                movingPlatform.settings.speed = speed;
-            }
         }
     }
 

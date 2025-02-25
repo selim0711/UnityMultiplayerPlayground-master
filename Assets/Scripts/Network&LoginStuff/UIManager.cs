@@ -36,7 +36,8 @@ public class UIManager : Singleton<UIManager>
     [SerializeField] private Slider staminaSliderPrefab;
     [SerializeField] private Transform uiParent;
 
-
+    [SerializeField] private GameObject speedBoostIndicator;
+    [SerializeField] private GameObject jumpBoostIndicator;
 
     [SerializeField]
     private TMP_InputField ipInputField;  // Referenz zum IP-Adresse Eingabefeld
@@ -269,5 +270,20 @@ void Update()
     {
         yield return new WaitForSeconds(0.1f);  // Adjust time as needed
         NetworkManager.Singleton.NetworkConfig.NetworkTransport = gameObject.AddComponent<UnityTransport>();
+    }
+
+    public void ShowSpeedBoostActive(bool isActive)
+    {
+        if (speedBoostIndicator != null)
+        {
+            speedBoostIndicator.SetActive(isActive);
+        }
+    }
+    public void ShowJumpBoostActive(bool isActive)
+    {
+        if (jumpBoostIndicator != null)
+        {
+            jumpBoostIndicator.SetActive(isActive);
+        }
     }
 }

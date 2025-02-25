@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 public class TotalScoreDisplay : MonoBehaviour
 {
     public TextMeshProUGUI scoreText;
-    private string fetchScoreUrl = "http://192.168.0.222/api/fetchTotalScore.php";
+    private string fetchScoreUrl = "http://localhost/api/fetchTotalScore.php";
     private int lastScore = -1; // ✅ Store last fetched score to detect changes
 
     void Start()

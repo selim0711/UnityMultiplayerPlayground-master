@@ -8,7 +8,7 @@ using TMPro;
 public class HighscoreTable : MonoBehaviour
 {
     public TMP_Text[] highscoreTexts;
-    private string highscoreURL = "http://192.168.0.222/api/get_highscores.php";
+    private string highscoreURL = "http://localhost/api/get_highscores.php";
 
     private void Start()
     {
