@@ -1,4 +1,4 @@
-using DilmerGames.Core.Singletons;
+﻿using DilmerGames.Core.Singletons;
 using TMPro;
 using Unity.Netcode;
 using UnityEngine;
@@ -97,18 +97,16 @@ void Update()
         
     }
 
-    string GetLocalIPAddress()
+    private string GetLocalIPAddress()
     {
-        string localIP = "";
         foreach (var ip in Dns.GetHostEntry(Dns.GetHostName()).AddressList)
         {
             if (ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
             {
-                localIP = ip.ToString();
-                break;
+                return ip.ToString();
             }
         }
-        return localIP;
+        return "127.0.0.1";
     }
 
     void Start()
@@ -118,13 +116,13 @@ void Update()
         {
             if (NetworkManager.Singleton.StartServer())
             {
-                Logger.Instance.LogInfo("Server started...");
+                Debug.Log("✅ Server gestartet...");
                 SetupHostOrServerCallbacks();
                 SetMusicVolume(-80);
             }
             else
             {
-                Logger.Instance.LogInfo("Unable to start server...");
+                Debug.LogError("❌ Server konnte nicht gestartet werden!");
             }
         });
 
@@ -133,33 +131,19 @@ void Update()
         {
             if (NetworkManager.Singleton.StartHost())
             {
-                string localIP = GetLocalIPAddress();
-                Logger.Instance.LogInfo($"Host started... Local IP Address: {localIP}");
+                Debug.Log($"✅ Host gestartet... IP: {GetLocalIPAddress()}");
                 DeactivateUIElements(uiElementsToDeactivateOnHost);
                 SetMusicVolume(-80);
 
-                // Display the IP address on UI or any relevant component
-                // Update any relevant UI component to show the IP address to users
-
-                DBConnection dbConnection = FindObjectOfType<DBConnection>();
-                if (dbConnection != null)
-                {
-                    string username = dbConnection.GetUsername();
-                    ulong localClientId = NetworkManager.Singleton.LocalClientId;
-                    GameManager.Instance.SetLoggedInUsernameRpc(localClientId, username);
-                }
-                else
-                {
-                    Logger.Instance.LogWarning("DBConnection instance not found!");
-                }
+                StartCoroutine(WaitForGameManagerAndSetUsername());
             }
             else
             {
-                Logger.Instance.LogInfo("Unable to start host...");
+                Debug.LogError("❌ Host konnte nicht gestartet werden!");
             }
         });
 
-        // START CLIENT
+        // START CLIENT (Relay)
         startClientButton?.onClick.AddListener(async () =>
         {
             if (RelayManager.Instance.IsRelayEnabled && !string.IsNullOrEmpty(joinCodeInput.text))
@@ -169,54 +153,27 @@ void Update()
 
             if (NetworkManager.Singleton.StartClient())
             {
-                Logger.Instance.LogInfo("Client started...");
-                SetupClientCallbacks(); // Setup callbacks for client-related events
-               DeactivateUIElements(uiElementsToDeactivateOnJoin);
-               SetMusicVolume(-80);
+                Debug.Log("✅ Client gestartet...");
+                SetupClientCallbacks();
+                DeactivateUIElements(uiElementsToDeactivateOnJoin);
+                SetMusicVolume(-80);
             }
             else
             {
-                Logger.Instance.LogInfo("Unable to start client...");
+                Debug.LogError("❌ Client konnte nicht gestartet werden!");
             }
         });
 
-        // CONNECT BUTTON FOR DIRECT IP CONNECTION
-        connectButton.onClick.AddListener(() =>
+        // CONNECT VIA IP
+        connectButton?.onClick.AddListener(() =>
         {
-            Debug.Log($"IP Input Field text: '{ipInputField.text}'"); // Check the actual content
-            if (!string.IsNullOrEmpty(ipInputField.text))
-            {
-                NetworkManager.Singleton.GetComponent<UnityTransport>().SetConnectionData("127.0.0.1", 7777);
-                
-                if (NetworkManager.Singleton.StartClient())
-                {
-                    DBConnection dbConnection = FindObjectOfType<DBConnection>();
-                    string username = dbConnection.GetUsername();
-                    ulong localClientId = NetworkManager.Singleton.LocalClientId;
-                    GameManager.Instance.SetLoggedInUsernameRpc(localClientId, username);
-                   
-                    Logger.Instance.LogInfo($"Attempting to connect to server at {ipInputField.text}...");
-                    ResetNetworkManager();
-                    DeactivateUIElements(uiElementsToDeactivateOnJoin);
-                    SetMusicVolume(-80);
-                }
-                else
-                {
-                    Logger.Instance.LogInfo("Unable to start client...");
-                    ResetNetworkManager();
-                }
-            }
-            else
-            {
-                Logger.Instance.LogInfo("IP address field is empty.");
-               
-            }
+            StartCoroutine(ConnectToServerByIP());
         });
 
-        // STATUS TYPE CALLBACKS
+        // CLIENT CONNECTION CALLBACK
         NetworkManager.Singleton.OnClientConnectedCallback += (id) =>
         {
-            Logger.Instance.LogInfo($"{id} just connected...");
+            Debug.Log($"🟢 Client {id} verbunden.");
         };
 
         NetworkManager.Singleton.OnServerStarted += () =>
@@ -227,16 +184,16 @@ void Update()
 
 
 
+
     private void SetupHostOrServerCallbacks()
     {
         NetworkManager.Singleton.OnClientConnectedCallback += (clientId) =>
         {
-            Logger.Instance.LogInfo($"[Server] Client {clientId} just connected.");
+            Debug.Log($"🟢 [Server] Client {clientId} verbunden.");
 
-            // If the host is the server, log the host's `ClientId`
             if (NetworkManager.Singleton.IsHost && clientId == NetworkManager.Singleton.LocalClientId)
             {
-                Logger.Instance.LogInfo($"[Host] Host ClientId: {clientId}");
+                Debug.Log($"[Host] Host ClientId: {clientId}");
             }
         };
     }
@@ -245,13 +202,94 @@ void Update()
     {
         NetworkManager.Singleton.OnClientConnectedCallback += (clientId) =>
         {
-            GameManager.Instance.SetLoggedInUsernameRpc(clientId, DBConnection.usernameAH);
+            Debug.Log($"🟢 [Client] Erfolgreich mit dem Server verbunden: {clientId}");
 
-            if (clientId == NetworkManager.Singleton.LocalClientId)
-            {
-                Logger.Instance.LogInfo($"[Client] Connected to server. Assigned ClientId: {clientId}");
-            }
+            StartCoroutine(WaitForGameManagerAndSetUsername());
         };
+    }
+    private IEnumerator WaitForGameManagerAndSetUsername()
+    {
+        float waitTime = 3f;
+        while (GameManager.Instance == null && waitTime > 0)
+        {
+            Debug.Log("⏳ Warte auf GameManager...");
+            yield return new WaitForSeconds(0.5f);
+            waitTime -= 0.5f;
+        }
+
+        if (GameManager.Instance != null)
+        {
+            Debug.Log("✅ GameManager gefunden!");
+
+            DBConnection dbConnection = FindObjectOfType<DBConnection>();
+            if (dbConnection != null)
+            {
+                string username = dbConnection.GetUsername();
+                ulong localClientId = NetworkManager.Singleton.LocalClientId;
+                GameManager.Instance.SetLoggedInUsernameRpc(localClientId, username);
+                Debug.Log($"📡 Username '{username}' für Client {localClientId} gesetzt.");
+            }
+            else
+            {
+                Debug.LogError("❌ DBConnection nicht gefunden!");
+            }
+        }
+        else
+        {
+            Debug.LogError("❌ GameManager nach Wartezeit nicht gefunden!");
+        }
+    }
+    private IEnumerator ConnectToServerByIP()
+    {
+        string ipAddress = ipInputField.text.Trim();
+        int port = 7777;
+
+        if (string.IsNullOrEmpty(ipAddress))
+        {
+            Debug.LogError("❌ IP-Adresse ist leer!");
+            yield break;
+        }
+
+        UnityTransport transport = NetworkManager.Singleton.GetComponent<UnityTransport>();
+        if (transport == null)
+        {
+            Debug.LogError("❌ UnityTransport nicht gefunden!");
+            yield break;
+        }
+
+        Debug.Log($"🔄 Verbinde zu {ipAddress}:{port}...");
+
+        transport.SetConnectionData(ipAddress, (ushort)port);
+
+        if (NetworkManager.Singleton.StartClient())
+        {
+            Debug.Log("✅ Client gestartet! Warte auf Verbindung...");
+
+            float timeout = 5f;
+            while (!NetworkManager.Singleton.IsConnectedClient && timeout > 0)
+            {
+                yield return new WaitForSeconds(0.5f);
+                timeout -= 0.5f;
+            }
+
+            if (NetworkManager.Singleton.IsConnectedClient)
+            {
+                Debug.Log("✅ Erfolgreich mit Server verbunden!");
+                DeactivateUIElements(uiElementsToDeactivateOnJoin);
+                SetMusicVolume(-80);
+
+                StartCoroutine(WaitForGameManagerAndSetUsername());
+            }
+            else
+            {
+                Debug.LogError("❌ Verbindung zum Server fehlgeschlagen!");
+                NetworkManager.Singleton.Shutdown();
+            }
+        }
+        else
+        {
+            Debug.LogError("❌ Client konnte nicht gestartet werden!");
+        }
     }
 
 

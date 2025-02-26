@@ -28,7 +28,7 @@ public class TotalScoreDisplay : MonoBehaviour
     IEnumerator FetchPlayerScore(int userId)
     {
         string url = fetchScoreUrl + "?id=" + userId;
-        Debug.Log($"📡 Sending GET request to {url}");
+        //Debug.Log($"📡 Sending GET request to {url}");
 
         using (UnityWebRequest www = UnityWebRequest.Get(url))
         {
