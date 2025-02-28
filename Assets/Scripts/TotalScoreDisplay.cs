@@ -6,7 +6,7 @@ using UnityEngine.Networking;
 public class TotalScoreDisplay : MonoBehaviour
 {
     public TextMeshProUGUI scoreText;
-    private string fetchScoreUrl = "http://localhost/api/fetchTotalScore.php";
+    private string fetchScoreUrl = "/api/fetchTotalScore.php";
     private int lastScore = -1; // ✅ Store last fetched score to detect changes
 
     void Start()
@@ -27,7 +27,7 @@ public class TotalScoreDisplay : MonoBehaviour
 
     IEnumerator FetchPlayerScore(int userId)
     {
-        string url = fetchScoreUrl + "?id=" + userId;
+        string url = DBConnection.db_ip + fetchScoreUrl + "?id=" + userId;
         //Debug.Log($"📡 Sending GET request to {url}");
 
         using (UnityWebRequest www = UnityWebRequest.Get(url))
@@ -60,10 +60,11 @@ public class TotalScoreDisplay : MonoBehaviour
         {
             yield return new WaitForSeconds(1f);
             StartCoroutine(FetchPlayerScore(userId));
+            Debug.Log("HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + scoreText.text);
         }
     }
 
-    void UpdateScoreUI(int newScore)
+    void UpdateScoreUI(int newScore)///////////////////////////////////////////////////////////////////////////////////////////////
     {
         if (newScore != lastScore) // ✅ Only update UI if the score has changed
         {

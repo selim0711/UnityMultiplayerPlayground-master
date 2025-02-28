@@ -1,3 +1,4 @@
+/*
 using UnityEngine;
 using UnityEditor;
 
@@ -20,3 +21,4 @@ public class PlatformSpawnerEditor : Editor
         }
     }
 }
+*/

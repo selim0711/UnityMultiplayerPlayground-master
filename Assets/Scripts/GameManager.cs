@@ -92,6 +92,10 @@ public class GameManager : NetworkBehaviour
 
     [SerializeField]
     private TMP_Text countdownText;
+    private AudioSource beepAudioSource; // Reference to the AudioSource component
+
+    [SerializeField]
+    private AudioClip beepSound; // Assign a beep sound in the Unity Inspector
 
 
     [SerializeField]
@@ -120,14 +124,21 @@ public class GameManager : NetworkBehaviour
 
     private void Start()
     {
+        beepAudioSource = GetComponent<AudioSource>();
+        if (beepAudioSource == null)
+        {
+            beepAudioSource = gameObject.AddComponent<AudioSource>();
+        }
+
         remainingGameTime.OnValueChanged += OnGameTimeChanged;
         networkCountdown.OnValueChanged += UpdateCountdownDisplay;
 
         if (startGameButton != null)
         {
-
             startGameButton.onClick.AddListener(OnStartGamePressed);
         }
+
+
     }
 
     private void UpdateCountdownDisplay(int oldValue, int newValue)
@@ -373,13 +384,20 @@ public class GameManager : NetworkBehaviour
     }
     private IEnumerator StartCountdown()
     {
-        int countdownTime = 3;  // Set this to your countdown duration
+        int countdownTime = 3;
         while (countdownTime >= 0)
         {
-            networkCountdown.Value = countdownTime--;
+            networkCountdown.Value = countdownTime;
+
+            if (beepAudioSource != null && beepSound != null)
+            {
+                beepAudioSource.PlayOneShot(beepSound); // Play the beep sound
+            }
+
+            countdownTime--;
             yield return new WaitForSeconds(1);
         }
-        // Trigger any other actions post-countdown
+
         gameRunning = true;
         StartCoroutine(GameTimer());
         SpawnBallAtRandomLocation();

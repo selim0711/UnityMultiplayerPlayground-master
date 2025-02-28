@@ -33,7 +33,7 @@ public class UIManager : Singleton<UIManager>
     private Button executePhysicsButton;
 
 
-    [SerializeField] private Slider staminaSliderPrefab;
+    private Slider staminaSliderPrefab;
     [SerializeField] private Transform uiParent;
 
     [SerializeField] private GameObject speedBoostIndicator;
@@ -57,6 +57,10 @@ public class UIManager : Singleton<UIManager>
     {
         mainAudioMixer.SetFloat("MusicVolume", volume);
     }
+    public void SetGameMusicVolume(float volume)
+    {
+        mainAudioMixer.SetFloat("GameMusicVolume", volume);
+    }
 
     private void DeactivateUIElements(GameObject[] elements)
     {
@@ -65,17 +69,19 @@ public class UIManager : Singleton<UIManager>
             element.SetActive(false);
         }
     }
+    
     public Slider CreateStaminaSliderForPlayer(ulong clientId)
     {
         Slider newSlider = Instantiate(staminaSliderPrefab, uiParent);
         newSlider.name = $"StaminaSlider_{clientId}";
         return newSlider;
     }
-
+    
 
     private void Awake()
     {
         mainAudioMixer.SetFloat("MusicVolume", 0);
+        mainAudioMixer.SetFloat("GameMusicVolume", -80);
         Cursor.visible = true;
     }
     
@@ -119,6 +125,7 @@ void Update()
                 Debug.Log("✅ Server gestartet...");
                 SetupHostOrServerCallbacks();
                 SetMusicVolume(-80);
+                SetGameMusicVolume(0);
             }
             else
             {
@@ -134,6 +141,7 @@ void Update()
                 Debug.Log($"✅ Host gestartet... IP: {GetLocalIPAddress()}");
                 DeactivateUIElements(uiElementsToDeactivateOnHost);
                 SetMusicVolume(-80);
+                SetGameMusicVolume(0);
 
                 StartCoroutine(WaitForGameManagerAndSetUsername());
             }
@@ -157,6 +165,7 @@ void Update()
                 SetupClientCallbacks();
                 DeactivateUIElements(uiElementsToDeactivateOnJoin);
                 SetMusicVolume(-80);
+                SetGameMusicVolume(0);
             }
             else
             {
@@ -277,6 +286,7 @@ void Update()
                 Debug.Log("✅ Erfolgreich mit Server verbunden!");
                 DeactivateUIElements(uiElementsToDeactivateOnJoin);
                 SetMusicVolume(-80);
+                SetGameMusicVolume(0);
 
                 StartCoroutine(WaitForGameManagerAndSetUsername());
             }

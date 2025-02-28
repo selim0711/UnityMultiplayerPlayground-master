@@ -9,8 +9,10 @@ public class DBConnection : MonoBehaviour
     public static string usernameAH = "";
 
     
-    public static string testingURL = "http://localhost/api/user.php";
-    public static string userRegisterURL = "http://localhost/api/UserLogin.php";
+    public static string testingURL = "/api/user.php";
+    public static string userRegisterURL = "/api/UserLogin.php";
+
+    public static string db_ip = "http://localhost";
     
     public bool loggedIn = false;
     public static event Action OnLoggedIn;
@@ -18,8 +20,8 @@ public class DBConnection : MonoBehaviour
 
     private void Start()
     {
-        PlayerPrefs.DeleteKey("userID"); // ✅ Clear the saved ID when the game starts
-        PlayerPrefs.Save();
+        //PlayerPrefs.DeleteKey("userID"); // ✅ Clear the saved ID when the game starts
+        //PlayerPrefs.Save();
     }
 
 
@@ -48,7 +50,7 @@ public class DBConnection : MonoBehaviour
         };
         string json = JsonUtility.ToJson(loginData);
 
-        using (var request = new UnityWebRequest("http://localhost/api/UserLogin.php", "POST"))
+        using (var request = new UnityWebRequest(DBConnection.db_ip + "/api/UserLogin.php", "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);
@@ -65,11 +67,13 @@ public class DBConnection : MonoBehaviour
                     {
                         Debug.Log($"✅ Login successful! Username: {response.UserName}, ID: {response.id}");
 
-                        PlayerPrefs.SetInt("userID", response.id); // ✅ Save only after successful login
+                        // ✅ CLEAR OLD PLAYERPREFS BEFORE SETTING NEW ID
+                        PlayerPrefs.DeleteKey("userID");
+                        PlayerPrefs.SetInt("userID", response.id);
                         PlayerPrefs.Save();
 
                         int savedId = PlayerPrefs.GetInt("userID", 0);
-                        Debug.Log($"🔍 Saved User ID: {savedId}");
+                        Debug.Log($"🔍 [DBConnection] Saved User ID: {savedId}");
 
                         usernameAH = username;
                         loggedIn = true;
@@ -78,17 +82,18 @@ public class DBConnection : MonoBehaviour
                     }
                     else
                     {
-                        Debug.LogError($"Login failed: {response.Message}");
+                        Debug.LogError($"❌ Login failed: {response.Message}");
                     }
                 }
                 catch (Exception e)
                 {
-                    Debug.LogError($"JSON parse error: {e.Message}");
+                    Debug.LogError($"❌ JSON parse error: {e.Message}");
+                    Debug.Log("📜 Received JSON: " + request.downloadHandler.text);
                 }
             }
             else
             {
-                Debug.LogError($"Network or HTTP error: {request.error}");
+                Debug.LogError($"❌ Network or HTTP error: {request.error}");
             }
         }
     }
@@ -128,7 +133,7 @@ public class DBConnection : MonoBehaviour
         };
         string json = JsonUtility.ToJson(registerData);
 
-        using (var request = new UnityWebRequest(userRegisterURL, "POST"))
+        using (var request = new UnityWebRequest(DBConnection.db_ip + userRegisterURL, "POST"))
         {
             byte[] bodyRaw = Encoding.UTF8.GetBytes(json);
             request.uploadHandler = new UploadHandlerRaw(bodyRaw);

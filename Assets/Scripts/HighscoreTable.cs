@@ -4,11 +4,12 @@ using UnityEngine.UI;
 using System.Collections.Generic;
 using System.Collections;
 using TMPro;
+using Newtonsoft.Json;
 
 public class HighscoreTable : MonoBehaviour
 {
     public TMP_Text[] highscoreTexts;
-    private string highscoreURL = "http://localhost/api/get_highscores.php";
+    private string highscoreURL = "/api/get_highscores.php";
 
     private void Start()
     {
@@ -17,12 +18,13 @@ public class HighscoreTable : MonoBehaviour
 
     IEnumerator GetHighscores()
     {
-        UnityWebRequest request = UnityWebRequest.Get(highscoreURL);
+        UnityWebRequest request = UnityWebRequest.Get(DBConnection.db_ip + highscoreURL);
         yield return request.SendWebRequest();
 
         if (request.result == UnityWebRequest.Result.Success)
         {
             string jsonResponse = request.downloadHandler.text;
+
             HighscoreData data = JsonUtility.FromJson<HighscoreData>(jsonResponse);
 
             if (data.success)
@@ -32,6 +34,7 @@ public class HighscoreTable : MonoBehaviour
             else
             {
                 Debug.LogError("Fehler: " + data.message);
+                Debug.Log("Json ji was: " + request.downloadHandler.text);
             }
         }
         else

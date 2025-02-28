@@ -79,6 +79,8 @@ AudioMixerController:
   m_EnableSuspend: 1
   m_UpdateMode: 0
   m_ExposedParameters:
+  - guid: 1f681dc6b8a44c348a8e12039a323752
+    name: GameMusicVolume
   - guid: bf3463eac88b897419be58d4e8bffe4c
     name: MusicVolume
   m_AudioMixerGroupViews:
@@ -87,6 +89,7 @@ AudioMixerController:
     - d37a81520b5b3cd4c947345e78cc100e
     - 70c5878d11bc6aa42809ed3c71f6849b
     - 91a1993d90bbb3b438617b3848127225
+    - f12e993ee77b18740bcbd5e1b2fe3c3d
     name: View
   m_CurrentViewIndex: 0
   m_TargetSnapshot: {fileID: 24500006}
@@ -103,6 +106,7 @@ AudioMixerGroupController:
   - {fileID: 971068533892965139}
   - {fileID: 1644694645239001003}
   - {fileID: -6876679998973885834}
+  - {fileID: 4759384835870484589}
   m_Volume: b776654729e6c1a438f84580b71b6938
   m_Pitch: d86ab048c8b70704899e78fd4156a76f
   m_Send: 00000000000000000000000000000000
@@ -136,9 +140,10 @@ AudioMixerSnapshotController:
   m_AudioMixer: {fileID: 24100000}
   m_SnapshotID: 0083f99c126edf140a9e228b2038496a
   m_FloatValues:
+    1f681dc6b8a44c348a8e12039a323752: -80
     90c02faa651978e4da2f05acaabc7a77: -8.17374
     bf3463eac88b897419be58d4e8bffe4c: 0
-    d8988a7fec926b649a2e07f0dbaeeb16: -0.05730971
+    d8988a7fec926b649a2e07f0dbaeeb16: -13.637256
   m_TransitionOverrides: {}
 --- !u!243 &971068533892965139
 AudioMixerGroupController:
@@ -178,6 +183,20 @@ AudioMixerGroupController:
   m_Mute: 0
   m_Solo: 0
   m_BypassEffects: 0
+--- !u!244 &3732566741986301571
+AudioMixerEffectController:
+  m_ObjectHideFlags: 3
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: Attenuation
+  m_EffectID: 2b592b14a0bf240428a6ed77c6b61d8d
+  m_EffectName: Attenuation
+  m_MixLevel: 10bad738af33ff74095de3a078c29d18
+  m_Parameters: []
+  m_SendTarget: {fileID: 0}
+  m_EnableWetMix: 0
+  m_Bypass: 0
 --- !u!244 &4206739295945057924
 AudioMixerEffectController:
   m_ObjectHideFlags: 3
@@ -192,3 +211,22 @@ AudioMixerEffectController:
   m_SendTarget: {fileID: 0}
   m_EnableWetMix: 0
   m_Bypass: 0
+--- !u!243 &4759384835870484589
+AudioMixerGroupController:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_Name: GameMusicVolume
+  m_AudioMixer: {fileID: 24100000}
+  m_GroupID: f12e993ee77b18740bcbd5e1b2fe3c3d
+  m_Children: []
+  m_Volume: 1f681dc6b8a44c348a8e12039a323752
+  m_Pitch: 298e2f93c46cd244baa9f77e094a3e56
+  m_Send: 00000000000000000000000000000000
+  m_Effects:
+  - {fileID: 3732566741986301571}
+  m_UserColorIndex: 0
+  m_Mute: 0
+  m_Solo: 0
+  m_BypassEffects: 0

@@ -170,15 +170,18 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     private void UpdatePlayerScoreToServer()
     {
-        if (isScoreUpdating) return;
-
         int userId = PlayerPrefs.GetInt("userID", 0);
+
+        // ✅ Log the stored Player ID
+        Debug.Log($"📡 [UpdatePlayerScoreToServer] Attempting to send score for User ID: {userId}");
+
         if (userId == 0)
         {
-            Debug.LogError("❌ Keine Benutzer-ID gefunden! Ist der Spieler eingeloggt?");
+            Debug.LogError("❌ No User ID Found! Make sure PlayerPrefs is correctly set after login.");
             return;
         }
-        isScoreUpdating = true; 
+
+        isScoreUpdating = true;
         StartCoroutine(SendScoreToDatabase(userId, networkScore.Value));
     }
 
@@ -202,7 +205,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
         byte[] jsonToSend = Encoding.UTF8.GetBytes(json);
 
-        using (UnityWebRequest www = new UnityWebRequest("http://localhost/api/updateScore.php", "POST"))//IP MUSS MAN ANPASSEN!!!
+        using (UnityWebRequest www = new UnityWebRequest(DBConnection.db_ip + "/api/updateScore.php", "POST"))//IP MUSS MAN ANPASSEN!!!
         {
             www.uploadHandler = new UploadHandlerRaw(jsonToSend);
             www.downloadHandler = new DownloadHandlerBuffer();
@@ -221,7 +224,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             }
         }
     }
-
+    /*
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.CompareTag("Player"))
@@ -240,6 +243,25 @@ public class PlayerWithRaycastControl : NetworkBehaviour
                 ballScript.InteractWithBallRpc(NetworkManager.Singleton.LocalClientId);
                 heldBall = other.gameObject;
                 heldBall.GetComponent<Ball>().SetOwner(transform, handTransform);
+            }
+        }
+    }
+    */
+    private void OnTriggerEnter(Collider other)
+    {
+        if (other.gameObject.CompareTag("Ball") && heldBall == null && !isStunned)
+        {
+            Ball ballScript = other.GetComponent<Ball>();
+            if (ballScript && ballScript.CanInteract(NetworkManager.Singleton.LocalClientId))
+            {
+                ballScript.InteractWithBallRpc(NetworkManager.Singleton.LocalClientId);
+                heldBall = other.gameObject;
+                heldBall.GetComponent<Ball>().SetOwner(transform, handTransform);
+
+                Debug.Log($"✅ Ball aufgenommen! {heldBall.name}");
+
+                // ✅ Score-Update starten, wenn der Ball aufgenommen wird
+                StartUpdatingScore();
             }
         }
     }
@@ -288,14 +310,13 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         ClientVisuals();
         HandleJump();
 
-         if (heldBall != null && !isStunned)
-         {
-             decimalScore += 1 * Time.deltaTime;
+        if (IsServer && heldBall != null && !isStunned)
+        {
+            decimalScore += 1 * Time.deltaTime;
             networkScore.Value = Mathf.RoundToInt(decimalScore);
-             StartUpdatingScore();
-             Debug.Log($"NewScore: {networkScore.Value}");
-         }
-         else
+            Debug.Log($"NewScore (Server): {networkScore.Value}");
+        }
+        else
          {
              StopUpdatingScore();
              decimalScore = networkScore.Value;
