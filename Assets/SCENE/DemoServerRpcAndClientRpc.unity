@@ -299161,7 +299161,7 @@ MonoBehaviour:
   gameTimerText: {fileID: 637873600}
   gameTimerText3D: {fileID: 1948009812}
   gameRunning: 0
-  gameDurationInMinutes: 5
+  gameDurationInMinutes: 0.5
 --- !u!4 &1659622881
 Transform:
   m_ObjectHideFlags: 0

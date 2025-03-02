@@ -14,24 +14,24 @@ public class SpeedItem : NetworkBehaviour
             if (player != null && player.IsOwner && !player.isSpeedBoostActive)
             {
                 player.ApplySpeedBoost(boostDuration, speedMultiplier);
-                DespawnItem(); // Despawn oder deaktiviere das Item
+                DespawnItem();
             }
         }
     }
 
     private void DespawnItem()
     {
-        if (IsServer) // Stelle sicher, dass nur der Server das Item deaktiviert
+        if (IsServer)
         {
             NetworkObject networkObject = GetComponent<NetworkObject>();
             if (networkObject != null)
             {
-                networkObject.Despawn(); // Entfernt das Item komplett aus der Szene
+                networkObject.Despawn();
             }
         }
         else
         {
-            gameObject.SetActive(false); // Deaktiviere das Item, falls nicht am Server
+            gameObject.SetActive(false);
         }
     }
 }

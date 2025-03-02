@@ -1,27 +1,26 @@
 using UnityEngine;
 
-//[CreateAssetMenu(fileName = "PlatformSpawner", menuName = "Scriptable Objects/PlatformSpawner")]
 public class PlatformSpawner : MonoBehaviour
 {
     public GameObject platformPrefab;
     public int numberOfPlatforms = 10;
-    public GameObject areaGameObject; // Reference to the empty GameObject with a Box Collider
-    public Transform platformsContainer; // Optional: A parent object to keep the scene tidy
+    public GameObject areaGameObject;
+    public Transform platformsContainer;
 
     public void SpawnPlatforms()
     {
-        ClearPlatforms(); // Clear existing platforms before spawning new ones
+        ClearPlatforms(); 
 
         if (areaGameObject == null)
         {
-            Debug.LogError("Area GameObject is not assigned!");
+            Debug.LogError("Area GameObject nicht zugewiesen");
             return;
         }
 
         BoxCollider areaCollider = areaGameObject.GetComponent<BoxCollider>();
         if (areaCollider == null)
         {
-            Debug.LogError("No Box Collider component found on area GameObject!");
+            Debug.LogError("Kein Collider gefunden");
             return;
         }
 
@@ -42,7 +41,7 @@ public class PlatformSpawner : MonoBehaviour
         }
     }
 
-    // Method to clear all spawned platforms
+   
     public void ClearPlatforms()
     {
         if (platformsContainer != null)

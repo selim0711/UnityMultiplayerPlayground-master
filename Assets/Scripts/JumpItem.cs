@@ -3,8 +3,8 @@ using UnityEngine;
 
 public class JumpItem : NetworkBehaviour
 {
-    public float boostDuration = 5f;  // Dauer des Jump Boosts
-    public float jumpMultiplier = 2f; // Multiplikator für die Sprunghöhe
+    public float boostDuration = 5f; 
+    public float jumpMultiplier = 2f; 
 
     private void OnTriggerEnter(Collider other)
     {
@@ -21,17 +21,17 @@ public class JumpItem : NetworkBehaviour
 
     private void DespawnItem()
     {
-        if (IsServer) // Stelle sicher, dass nur der Server das Item deaktiviert
+        if (IsServer)
         {
             NetworkObject networkObject = GetComponent<NetworkObject>();
             if (networkObject != null)
             {
-                networkObject.Despawn(); // Entfernt das Item komplett aus der Szene
+                networkObject.Despawn();
             }
         }
         else
         {
-            gameObject.SetActive(false); // Deaktiviere das Item, falls nicht am Server
+            gameObject.SetActive(false);
         }
     }
 }

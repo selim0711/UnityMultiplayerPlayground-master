@@ -92,10 +92,10 @@ public class GameManager : NetworkBehaviour
 
     [SerializeField]
     private TMP_Text countdownText;
-    private AudioSource beepAudioSource; // Reference to the AudioSource component
+    private AudioSource beepAudioSource;
 
     [SerializeField]
-    private AudioClip beepSound; // Assign a beep sound in the Unity Inspector
+    private AudioClip beepSound; 
 
 
     [SerializeField]
@@ -178,14 +178,14 @@ public class GameManager : NetworkBehaviour
         }
 
         Bounds bounds = spawnAreaCollider.bounds;
-        Debug.Log($"Bounds: {bounds}"); // Log the actual bounds to verify their values
+        Debug.Log($"Bounds: {bounds}"); 
 
         int maxAttempts = 100;
         for (int i = 0; i < maxAttempts; i++)
         {
             Vector3 randomPosition = new Vector3(
                 UnityEngine.Random.Range(bounds.min.x, bounds.max.x),
-                bounds.center.y, // Ensure this is correctly set based on the surface of the plane
+                bounds.center.y,
                 UnityEngine.Random.Range(bounds.min.z, bounds.max.z)
             );
 
@@ -224,17 +224,17 @@ public class GameManager : NetworkBehaviour
 
         if (!clientUsernames.ContainsKey(clientId))
         {
-            Debug.Log($"[GameManager] Adding username for ClientId {clientId}: {username}");
+           // Debug.Log($"[GameManager] Adding username for ClientId {clientId}: {username}");
             clientUsernames.Add(clientId, username);
         }
         else
         {
-            Debug.Log($"[GameManager] Updating username for ClientId {clientId}: {username}");
+            //Debug.Log($"[GameManager] Updating username for ClientId {clientId}: {username}");
             clientUsernames[clientId] = username;
         }
 
 
-        Debug.Log($"Spawned player object with OwnerClientId: {netObj.OwnerClientId}");
+        //Debug.Log($"Spawned player object with OwnerClientId: {netObj.OwnerClientId}");
 
 
         BroadcastUsernameToClientsServerRpc(clientId, netObj.NetworkObjectId, username);
@@ -335,12 +335,12 @@ public class GameManager : NetworkBehaviour
     public void SetGameDuration(float minutes)
     {
         gameDurationInMinutes = minutes;
-        Debug.Log($"📢 Spielzeit auf {minutes} Minuten gesetzt!");
+        //Debug.Log($"📢 Spielzeit auf {minutes} Minuten gesetzt!");
     }
 
     private IEnumerator GameTimer()
     {
-        remainingGameTime.Value = gameDurationInMinutes * 60; // Set to 10 minutes
+        remainingGameTime.Value = gameDurationInMinutes * 60;
         while (remainingGameTime.Value > 0)
         {
             yield return new WaitForSeconds(1);
@@ -348,29 +348,28 @@ public class GameManager : NetworkBehaviour
         }
 
         gameRunning = false;
-        Debug.Log("❌ Spielzeit abgelaufen!");
+        //Debug.Log("❌ Spielzeit abgelaufen!");
 
         PostGameReset();
     }
 
     private void PostGameReset()
     {
-        // Despawnen des Balls, wenn vorhanden
+        
         if (currentBallInstance != null)
         {
             Destroy(currentBallInstance);
             currentBallInstance = null;
-            Debug.Log("🏀 Ball despawned!");
+            //Debug.Log("🏀 Ball despawned!");
         }
 
-        // Setze den Spielstatus zurück und aktiviere den Start-Button
+
         gameRunning = false;
         if (startGameButton != null)
         {
             startGameButton.gameObject.SetActive(true);
         }
 
-        // Weitere Resets können hier hinzugefügt werden, z.B. Reset der Spielerpunkte oder ähnliches
     }
 
     private void UpdateGameTimerUI(float time)
@@ -391,7 +390,7 @@ public class GameManager : NetworkBehaviour
 
             if (beepAudioSource != null && beepSound != null)
             {
-                beepAudioSource.PlayOneShot(beepSound); // Play the beep sound
+                beepAudioSource.PlayOneShot(beepSound); 
             }
 
             countdownTime--;
@@ -406,12 +405,12 @@ public class GameManager : NetworkBehaviour
 
     private void SpawnBallAtRandomLocation()
     {
-        Vector3 ballSpawnPosition = GetValidSpawnPosition(); // Verwenden der gleichen Methode, um eine gültige Position zu erhalten
+        Vector3 ballSpawnPosition = GetValidSpawnPosition();
         if (ballSpawnPosition != Vector3.zero)
         {
-            float spawnHeight = 40f; // Höhe, aus der der Ball fallen soll
-            ballSpawnPosition.y += spawnHeight; // Erhöhen der y-Koordinate um den spawnHeight
-            currentBallInstance = Instantiate(ballPrefab, ballSpawnPosition, Quaternion.identity); // Erstellen des Balls an der modifizierten Position
+            float spawnHeight = 40f; 
+            ballSpawnPosition.y += spawnHeight; 
+            currentBallInstance = Instantiate(ballPrefab, ballSpawnPosition, Quaternion.identity);
             currentBallInstance.GetComponent<NetworkObject>().Spawn();
         }
         else

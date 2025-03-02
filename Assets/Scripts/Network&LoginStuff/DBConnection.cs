@@ -18,13 +18,6 @@ public class DBConnection : MonoBehaviour
     public static event Action OnLoggedIn;
     private string currentUsername;
 
-    private void Start()
-    {
-        //PlayerPrefs.DeleteKey("userID"); // ✅ Clear the saved ID when the game starts
-        //PlayerPrefs.Save();
-    }
-
-
     IEnumerator Get(string url)
     {
         var request = new UnityWebRequest(url, "GET");
@@ -67,7 +60,7 @@ public class DBConnection : MonoBehaviour
                     {
                         Debug.Log($"✅ Login successful! Username: {response.UserName}, ID: {response.id}");
 
-                        // ✅ CLEAR OLD PLAYERPREFS BEFORE SETTING NEW ID
+                        //player prefs werden richtig gespeichert & entfernt
                         PlayerPrefs.DeleteKey("userID");
                         PlayerPrefs.SetInt("userID", response.id);
                         PlayerPrefs.Save();
@@ -78,7 +71,7 @@ public class DBConnection : MonoBehaviour
                         usernameAH = username;
                         loggedIn = true;
 
-                        OnLoggedIn?.Invoke(); // ✅ Only invoke this event after successful login
+                        OnLoggedIn?.Invoke(); 
                     }
                     else
                     {
@@ -98,8 +91,6 @@ public class DBConnection : MonoBehaviour
         }
     }
 
-
-    // Methode, um den aktuellen Benutzernamen zu erhalten
     public string GetUsername()
     {
         return currentUsername;
@@ -151,9 +142,6 @@ public class DBConnection : MonoBehaviour
             }
         }
     }
-
-    
-
 }
 
 

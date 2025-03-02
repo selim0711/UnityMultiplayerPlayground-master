@@ -17,26 +17,12 @@ public class PlayerBallHandler : NetworkBehaviour
     private bool canTransferBall = true;
 
 
-
-
     public override void OnNetworkSpawn()
     {
         base.OnNetworkSpawn();
 
         player = GetComponent<NetworkPlayer>();
     }
-
-
-
-
-
-    
-
-
-
-    
-
-   
 
     private void Update()
     {

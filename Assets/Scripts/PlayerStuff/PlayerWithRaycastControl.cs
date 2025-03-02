@@ -93,6 +93,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
     public bool isSpeedBoostActive = false;
     public bool isJumpBoostActive = false;
+
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
@@ -116,14 +117,11 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     {
         if (Time.time >= nextFootstepTime && characterController.isGrounded && characterController.velocity.magnitude > 0.1f)
         {
-            // Bestimme das tempo vom Spielerzustand
             float speedMultiplier = (networkPlayerState.Value == PlayerState.Run) ? 1.5f : 1.0f;
             footstepAudioSource.pitch = speedMultiplier;
 
-            // Spiele den Sound ab
             footstepAudioSource.PlayOneShot(footstepSound);
 
-            // Berechne das nächste Abspielintervall
             nextFootstepTime = Time.time + footstepDelay / speedMultiplier;
         }
     }
@@ -172,8 +170,8 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     {
         int userId = PlayerPrefs.GetInt("userID", 0);
 
-        // ✅ Log the stored Player ID
-        Debug.Log($"📡 [UpdatePlayerScoreToServer] Attempting to send score for User ID: {userId}");
+        
+        //Debug.Log($"📡 [UpdatePlayerScoreToServer] Attempting to send score for User ID: {userId}");
 
         if (userId == 0)
         {
@@ -205,7 +203,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
 
         byte[] jsonToSend = Encoding.UTF8.GetBytes(json);
 
-        using (UnityWebRequest www = new UnityWebRequest(DBConnection.db_ip + "/api/updateScore.php", "POST"))//IP MUSS MAN ANPASSEN!!!
+        using (UnityWebRequest www = new UnityWebRequest(DBConnection.db_ip + "/api/updateScore.php", "POST"))
         {
             www.uploadHandler = new UploadHandlerRaw(jsonToSend);
             www.downloadHandler = new DownloadHandlerBuffer();
@@ -224,29 +222,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
             }
         }
     }
-    /*
-    private void OnTriggerEnter(Collider other)
-    {
-        if (other.gameObject.CompareTag("Player"))
-        {
-            if (heldBall != null && !isStunned)
-            {
-                DropBallServerRpc();
-                StartCoroutine(StunPlayer(stunDuration));
-            }
-        }
-        else if (other.gameObject.CompareTag("Ball") && heldBall == null && !isStunned)
-        {
-            Ball ballScript = other.GetComponent<Ball>();
-            if (ballScript && ballScript.CanInteract(NetworkManager.Singleton.LocalClientId))
-            {
-                ballScript.InteractWithBallRpc(NetworkManager.Singleton.LocalClientId);
-                heldBall = other.gameObject;
-                heldBall.GetComponent<Ball>().SetOwner(transform, handTransform);
-            }
-        }
-    }
-    */
+  
     private void OnTriggerEnter(Collider other)
     {
         if (other.gameObject.CompareTag("Ball") && heldBall == null && !isStunned)
@@ -258,9 +234,8 @@ public class PlayerWithRaycastControl : NetworkBehaviour
                 heldBall = other.gameObject;
                 heldBall.GetComponent<Ball>().SetOwner(transform, handTransform);
 
-                Debug.Log($"✅ Ball aufgenommen! {heldBall.name}");
+                //Debug.Log($"✅ Ball aufgenommen! {heldBall.name}");
 
-                // ✅ Score-Update starten, wenn der Ball aufgenommen wird
                 StartUpdatingScore();
             }
         }
@@ -270,16 +245,16 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     {
         if (heldBall != null && other.gameObject == heldBall)
         {
-            Debug.Log("Spieler hat den Ballbereich verlassen");
+            //Debug.Log("Spieler hat den Ballbereich verlassen");
 
             if (heldBall.transform.parent != handTransform)
             {
-                Debug.Log("Ball wird wirklich fallen gelassen");
+                //Debug.Log("Ball wird wirklich fallen gelassen");
                 DropBallServerRpc();
             }
             else
             {
-                Debug.Log("Ball ist noch in der Hand.");
+                //Debug.Log("Ball ist noch in der Hand.");
             }
         }
     } 
@@ -314,7 +289,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
         {
             decimalScore += 1 * Time.deltaTime;
             networkScore.Value = Mathf.RoundToInt(decimalScore);
-            Debug.Log($"NewScore (Server): {networkScore.Value}");
+            //Debug.Log($"NewScore (Server): {networkScore.Value}");
         }
         else
          {
@@ -328,7 +303,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     {
         if (heldBall == null)
         {
-            Debug.Log("⚠️ DropBallServerRpc wurde aufgerufen, aber `heldBall` ist bereits `null`. Ignoriere den Aufruf.");
+            Debug.Log("DropBallServerRpc wurde aufgerufen, aber `heldBall` ist bereits `null`  Ignoriere den Aufruf");
             return;
         }
 
@@ -358,7 +333,7 @@ public class PlayerWithRaycastControl : NetworkBehaviour
     private void ClientMoveAndRotate()
     {
         Vector3 move = networkPositionDirection.Value * Time.deltaTime;
-        move += verticalVelocity * Vector3.up * Time.deltaTime; //füge vertikale Geschwindigkeit hinzu
+        move += verticalVelocity * Vector3.up * Time.deltaTime;
 
         characterController.Move(move);
 

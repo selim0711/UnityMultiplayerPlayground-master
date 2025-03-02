@@ -7,12 +7,12 @@ public class TotalScoreDisplay : MonoBehaviour
 {
     public TextMeshProUGUI scoreText;
     private string fetchScoreUrl = "/api/fetchTotalScore.php";
-    private int lastScore = -1; // ✅ Store last fetched score to detect changes
+    private int lastScore = -1;
 
     void Start()
     {
         scoreText.text = "Please log in to view your score.";
-        DBConnection.OnLoggedIn += StartFetchingScore; // ✅ Start fetching only after login
+        DBConnection.OnLoggedIn += StartFetchingScore;
     }
 
     void StartFetchingScore()
@@ -21,7 +21,7 @@ public class TotalScoreDisplay : MonoBehaviour
         if (userId != 0)
         {
             StartCoroutine(FetchPlayerScore(userId));
-            StartCoroutine(UpdateScoreLoop(userId)); // ✅ Start checking for score updates
+            StartCoroutine(UpdateScoreLoop(userId));
         }
     }
 
@@ -36,7 +36,7 @@ public class TotalScoreDisplay : MonoBehaviour
 
             if (www.result != UnityWebRequest.Result.Success)
             {
-                Debug.LogError("❌ Error while fetching the score: " + www.error);
+                //Debug.LogError("❌ Error while fetching the score: " + www.error);
                 scoreText.text = "Failed to load score.";
             }
             else
@@ -56,17 +56,16 @@ public class TotalScoreDisplay : MonoBehaviour
 
     IEnumerator UpdateScoreLoop(int userId)
     {
-        while (true) // ✅ Keep checking the score every 3 seconds
+        while (true)
         {
             yield return new WaitForSeconds(1f);
             StartCoroutine(FetchPlayerScore(userId));
-            Debug.Log("HAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA" + scoreText.text);
         }
     }
 
-    void UpdateScoreUI(int newScore)///////////////////////////////////////////////////////////////////////////////////////////////
+    void UpdateScoreUI(int newScore)
     {
-        if (newScore != lastScore) // ✅ Only update UI if the score has changed
+        if (newScore != lastScore)
         {
             lastScore = newScore;
             scoreText.text = "Total Score: " + newScore;

@@ -6,8 +6,8 @@ using UnityEngine;
 public class Ball : NetworkBehaviour
 {
     private NetworkVariable<ulong> ownerClientId = new NetworkVariable<ulong>();
-    private Transform followTarget; // The target to follow (player's hand)
-    private Vector3 localPosition; // Local position relative to the player's hand
+    private Transform followTarget; 
+    private Vector3 localPosition; 
 
     public bool CanInteract(ulong clientId)
     {
@@ -17,22 +17,22 @@ public class Ball : NetworkBehaviour
     [Rpc(SendTo.Server)]
     public void InteractWithBallRpc(ulong clientId)
     {
-        ownerClientId.Value = clientId; // Set new owner
+        ownerClientId.Value = clientId;
     }
 
     [Rpc(SendTo.Server)]
     public void ClearOwnerRpc()
     {
-        ownerClientId.Value = 0; // No owner
-        followTarget = null; // Stop following
-        gameObject.GetComponent<Rigidbody>().isKinematic = false; // Make the ball responsive to physics again
+        ownerClientId.Value = 0; 
+        followTarget = null; 
+        gameObject.GetComponent<Rigidbody>().isKinematic = false; 
     }
 
     public void SetOwner(Transform playerTransform, Transform hand)
     {
         followTarget = hand;
         localPosition = Vector3.zero;
-        gameObject.GetComponent<Rigidbody>().isKinematic = true; ; // ✅ Der Ball wird jetzt als Kind der Hand gesetzt
+        gameObject.GetComponent<Rigidbody>().isKinematic = true; ;
     }
 
     void Update()
